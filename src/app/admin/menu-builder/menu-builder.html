@@ -7,9 +7,7 @@
     <div>
       <p class="section-label">MENU BUILDER</p>
 
-      <h1>
-        {{ menu()?.name || 'Menu' }}
-      </h1>
+      <h1>{{ menu()?.name || 'Menu' }}</h1>
 
       <p class="page-description">
         Manage categories and products for this menu.
@@ -41,46 +39,120 @@
     @if (categories().length === 0) {
       <div class="empty-state">
         <h2>No categories yet</h2>
-        <p>
-          Add the first category to this menu.
-        </p>
+        <p>Add the first category to this menu.</p>
       </div>
     } @else {
       <div class="categories-list">
-        @for (
-          category of categories();
-          track category.id
-        ) {
-          <div class="category-card">
-            <div class="category-content">
-              <h2>{{ category.name }}</h2>
+        @for (category of categories(); track category.id) {
+          <section class="category-card">
+            <div class="category-header">
+              <div>
+                <h2>{{ category.name }}</h2>
+                <p>
+                  {{ category.description || 'No description' }}
+                </p>
+              </div>
 
-              <p>
-                {{
-                  category.description ||
-                  'No description'
-                }}
-              </p>
+              <div class="category-actions">
+                <button
+                  type="button"
+                  class="secondary-button"
+                  (click)="openEditCategory(category)"
+                >
+                  Edit
+                </button>
+
+                <button
+                  type="button"
+                  class="delete-button"
+                  (click)="deleteCategory(category)"
+                >
+                  Delete
+                </button>
+              </div>
             </div>
 
-            <div class="category-actions">
-              <button
-                type="button"
-                class="secondary-button"
-                (click)="openEditCategory(category)"
-              >
-                Edit
-              </button>
+            <div class="products-header">
+              <h3>Products</h3>
 
               <button
                 type="button"
-                class="delete-button"
-                (click)="deleteCategory(category)"
+                class="add-product-button"
+                (click)="openCreateProduct(category)"
               >
-                Delete
+                + Add Product
               </button>
             </div>
-          </div>
+
+            @if (getProducts(category.id).length === 0) {
+              <div class="products-empty">
+                No products in this category yet.
+              </div>
+            } @else {
+              <div class="products-list">
+                @for (
+                  product of getProducts(category.id);
+                  track product.id
+                ) {
+                  <div class="product-row">
+                    <div class="product-info">
+                      <div class="product-title">
+                        <h4>{{ product.name }}</h4>
+
+                        @if (product.isAvailable) {
+                          <span class="availability available">
+                            Available
+                          </span>
+                        } @else {
+                          <span class="availability unavailable">
+                            Unavailable
+                          </span>
+                        }
+                      </div>
+
+                      <p>
+                        {{ product.description || 'No description' }}
+                      </p>
+                    </div>
+
+                    <div class="product-price">
+                      €{{ product.price }}
+                    </div>
+
+                    <div class="product-actions">
+                      <button
+                        type="button"
+                        class="secondary-button"
+                        (click)="openEditProduct(product)"
+                      >
+                        Edit
+                      </button>
+
+                      <button
+                        type="button"
+                        class="secondary-button"
+                        (click)="toggleAvailability(product)"
+                      >
+                        {{
+                          product.isAvailable
+                            ? 'Mark Unavailable'
+                            : 'Make Available'
+                        }}
+                      </button>
+
+                      <button
+                        type="button"
+                        class="delete-button"
+                        (click)="deleteProduct(product)"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                }
+              </div>
+            }
+          </section>
         }
       </div>
     }
@@ -92,7 +164,7 @@
       (click)="closeCategoryForm()"
     >
       <div
-        class="category-modal"
+        class="form-modal"
         (click)="$event.stopPropagation()"
       >
         <div class="modal-header">
@@ -125,9 +197,7 @@
 
         <form (ngSubmit)="saveCategory()">
           <div class="form-group">
-            <label for="categoryName">
-              Category Name
-            </label>
+            <label for="categoryName">Category Name</label>
 
             <input
               id="categoryName"
@@ -135,7 +205,6 @@
               type="text"
               maxlength="100"
               [(ngModel)]="categoryName"
-              placeholder="Coffee"
               required
             >
           </div>
@@ -150,7 +219,6 @@
               name="categoryDescription"
               rows="4"
               [(ngModel)]="categoryDescription"
-              placeholder="Optional category description"
             ></textarea>
           </div>
 
@@ -175,15 +243,199 @@
               class="save-button"
               [disabled]="isSaving()"
             >
-              @if (isSaving()) {
-                Saving...
-              } @else {
-                {{
-                  editingCategoryId() === null
+              {{
+                isSaving()
+                  ? 'Saving...'
+                  : editingCategoryId() === null
                     ? 'Create Category'
                     : 'Save Changes'
-                }}
-              }
+              }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+
+  @if (showProductForm()) {
+    <div
+      class="modal-backdrop"
+      (click)="closeProductForm()"
+    >
+      <div
+        class="form-modal"
+        (click)="$event.stopPropagation()"
+      >
+        <div class="modal-header">
+          <div>
+            <p class="section-label">
+              {{
+                editingProductId() === null
+                  ? 'CREATE PRODUCT'
+                  : 'EDIT PRODUCT'
+              }}
+            </p>
+
+            <h2>
+              {{
+                editingProductId() === null
+                  ? 'New Product'
+                  : 'Edit Product'
+              }}
+            </h2>
+          </div>
+
+          <button
+            type="button"
+            class="close-button"
+            (click)="closeProductForm()"
+          >
+            ×
+          </button>
+        </div>
+
+        <form (ngSubmit)="saveProduct()">
+          <div class="form-group">
+            <label for="productName">Product Name</label>
+
+            <input
+              id="productName"
+              name="productName"
+              type="text"
+              maxlength="120"
+              [(ngModel)]="productName"
+              required
+            >
+          </div>
+
+          <div class="form-group">
+            <label for="productDescription">
+              Description
+            </label>
+
+            <textarea
+              id="productDescription"
+              name="productDescription"
+              rows="4"
+              [(ngModel)]="productDescription"
+            ></textarea>
+          </div>
+
+          <div class="form-group">
+            <label for="productPrice">Price (€)</label>
+
+            <input
+              id="productPrice"
+              name="productPrice"
+              type="number"
+              min="0"
+              step="0.01"
+              [(ngModel)]="productPrice"
+              required
+            >
+          </div>
+
+<div class="form-group">
+  <label for="productImage">
+    Product Photo
+  </label>
+
+  <input
+    id="productImage"
+    type="file"
+    accept="image/jpeg,image/png,image/webp"
+    (change)="onImageSelected($event)"
+  >
+</div>
+
+@if (currentProductImageUrl() && !imageChangedEvent) {
+  <div class="current-product-image">
+    <span>Current photo</span>
+
+    <img
+      [src]="currentProductImageUrl()!"
+      alt="Current product photo"
+    >
+  </div>
+}
+
+@if (imageChangedEvent) {
+  <div class="crop-section">
+    <p>
+      Choose the square area you want to use.
+    </p>
+
+    <image-cropper
+      [imageChangedEvent]="imageChangedEvent"
+      [maintainAspectRatio]="true"
+      [aspectRatio]="1"
+      [cropperMinWidth]="800"
+      [resizeToWidth]="1200"
+      [onlyScaleDown]="true"
+      [imageQuality]="85"
+      format="webp"
+      output="blob"
+      (imageLoaded)="imageLoaded($event)"
+      (imageCropped)="imageCropped($event)"
+      (loadImageFailed)="loadImageFailed()"
+    ></image-cropper>
+  </div>
+}
+
+@if (croppedImagePreview()) {
+  <div class="crop-preview">
+    <span>Preview</span>
+
+    <img
+      [src]="croppedImagePreview()!"
+      alt="Product image preview"
+    >
+  </div>
+}
+
+@if (imageError()) {
+  <div class="form-error">
+    {{ imageError() }}
+  </div>
+}
+
+          <label class="availability-checkbox">
+            <input
+              type="checkbox"
+              name="productAvailable"
+              [(ngModel)]="productAvailable"
+            >
+            Available
+          </label>
+
+          @if (formError()) {
+            <div class="form-error">
+              {{ formError() }}
+            </div>
+          }
+
+          <div class="modal-actions">
+            <button
+              type="button"
+              class="cancel-button"
+              (click)="closeProductForm()"
+              [disabled]="isSaving()"
+            >
+              Cancel
+            </button>
+
+            <button
+              type="submit"
+              class="save-button"
+              [disabled]="isSaving()"
+            >
+              {{
+                isSaving()
+                  ? 'Saving...'
+                  : editingProductId() === null
+                    ? 'Create Product'
+                    : 'Save Changes'
+              }}
             </button>
           </div>
         </form>

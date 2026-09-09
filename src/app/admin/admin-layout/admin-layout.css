@@ -1,0 +1,111 @@
+.admin-layout {
+  display: flex;
+  min-height: 100vh;
+  background-color: #f5f5f5;
+}
+
+.admin-sidebar {
+  width: 240px;
+  min-height: 100vh;
+  box-sizing: border-box;
+  padding: 28px 20px 20px;
+  background-color: #111111;
+  color: white;
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-brand {
+  margin-bottom: 40px;
+}
+
+.admin-brand h2 {
+  margin: 0;
+  font-size: 24px;
+}
+
+.admin-brand span {
+  display: block;
+  margin-top: 4px;
+  color: #a8a8a8;
+  font-size: 14px;
+}
+
+.admin-navigation {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.nav-item {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: transparent;
+  color: white;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.nav-item:hover {
+  background-color: #eeeeee;
+  color: black;
+}
+
+.nav-item.active {
+  background-color: #e9e9e9;
+  color: black;
+}
+
+.logout-button {
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: auto;
+  padding: 13px;
+  border: none;
+  border-radius: 8px;
+  background-color: white;
+  color: black;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.logout-button:hover {
+  background-color: #e9e9e9;
+}
+
+.logout-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.admin-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.admin-topbar {
+  display: flex;
+  justify-content: flex-end;
+  padding: 24px 32px 0;
+}
+
+.view-site-button {
+  padding: 12px 18px;
+  background-color: #111111;
+  color: white;
+  text-decoration: none;
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+.view-site-button:hover {
+  background-color: #303030;
+}
+
+.admin-page {
+  padding: 32px;
+}

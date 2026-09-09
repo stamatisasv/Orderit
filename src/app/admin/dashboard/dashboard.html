@@ -1,0 +1,49 @@
+<header class="dashboard-header">
+  <div>
+    <p class="section-label">ADMIN DASHBOARD</p>
+    <h1>Welcome back, {{ username() }}</h1>
+  </div>
+</header>
+
+<section class="stats-grid">
+  <div class="stat-card">
+    <span>Products</span>
+    <strong>0</strong>
+    <p>Menu items</p>
+  </div>
+
+  <div class="stat-card">
+    <span>Active Orders</span>
+    <strong>0</strong>
+    <p>Waiting or preparing</p>
+  </div>
+
+  <div class="stat-card">
+    <span>Tables</span>
+    <strong>0</strong>
+    <p>Registered tables</p>
+  </div>
+</section>
+
+<section class="dashboard-grid">
+  <div class="dashboard-card">
+    <div class="card-header">
+      <h2>Quick Actions</h2>
+    </div>
+
+    <div class="quick-actions">
+      <button type="button">Add Product</button>
+      <button type="button">Add Table</button>
+    </div>
+  </div>
+
+  <div class="dashboard-card">
+    <div class="card-header">
+      <h2>Recent Orders</h2>
+    </div>
+
+    <div class="empty-state">
+      <p>No orders yet.</p>
+    </div>
+  </div>
+</section>

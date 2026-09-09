@@ -1,0 +1,55 @@
+.hero {
+  min-height: calc(100vh - 75px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 40px 20px;
+}
+
+.hero-content {
+  max-width: 800px;
+  text-align: center;
+}
+
+.eyebrow {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  margin-bottom: 18px;
+}
+
+.hero h1 {
+  font-size: 64px;
+  margin: 0 0 20px;
+}
+
+.hero-text {
+  max-width: 600px;
+  margin: 0 auto 32px;
+  font-size: 20px;
+  line-height: 1.6;
+}
+
+.hero-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+}
+
+.primary-button,
+.secondary-button {
+  padding: 14px 26px;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.primary-button {
+  background-color: black;
+  color: white;
+}
+
+.secondary-button {
+  border: 1px solid black;
+  color: black;
+}

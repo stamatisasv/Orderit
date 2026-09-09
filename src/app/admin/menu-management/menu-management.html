@@ -1,0 +1,195 @@
+<div class="menu-page">
+  <header class="menu-header">
+    <div>
+      <p class="section-label">MENU MANAGEMENT</p>
+      <h1>Menus</h1>
+      <p class="page-description">
+        Create and manage your restaurant menus.
+      </p>
+    </div>
+
+    <button
+      type="button"
+      class="create-button"
+      (click)="openCreateForm()"
+    >
+      + Create Menu
+    </button>
+  </header>
+
+  @if (isLoading()) {
+    <div class="state-message">
+      Loading menus...
+    </div>
+  }
+
+  @if (errorMessage()) {
+    <div class="error-message">
+      {{ errorMessage() }}
+    </div>
+  }
+
+  @if (!isLoading() && !errorMessage()) {
+    @if (menus().length === 0) {
+      <div class="empty-state">
+        <h2>No menus yet</h2>
+        <p>Create your first menu to get started.</p>
+      </div>
+    } @else {
+      <div class="menus-grid">
+        @for (menu of menus(); track menu.id) {
+          <div class="menu-card">
+            <div class="menu-card-header">
+              <div>
+                <h2>{{ menu.name }}</h2>
+
+                @if (menu.isActive) {
+                  <span class="status active">
+                    Active
+                  </span>
+                } @else {
+                  <span class="status inactive">
+                    Inactive
+                  </span>
+                }
+              </div>
+            </div>
+
+            <p class="menu-description">
+              {{ menu.description || 'No description' }}
+            </p>
+
+            <div class="menu-actions">
+              @if (!menu.isActive) {
+                <button
+                  type="button"
+                  class="secondary-button"
+                  (click)="activateMenu(menu)"
+                >
+                  Activate
+                </button>
+              }
+
+              <button
+                type="button"
+                class="secondary-button"
+                (click)="manageMenu(menu)"
+              >
+                Manage
+              </button>
+
+              <button
+                type="button"
+                class="secondary-button"
+                (click)="openEditForm(menu)"
+              >
+                Edit
+              </button>
+
+              <button
+                type="button"
+                class="delete-button"
+                (click)="deleteMenu(menu)"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        }
+      </div>
+    }
+  }
+
+  @if (showMenuForm()) {
+    <div
+      class="modal-backdrop"
+      (click)="closeForm()"
+    >
+      <div
+        class="menu-modal"
+        (click)="$event.stopPropagation()"
+      >
+        <div class="modal-header">
+          <div>
+            <p class="section-label">
+              {{ editingMenuId() === null ? 'CREATE MENU' : 'EDIT MENU' }}
+            </p>
+
+            <h2>
+              {{ editingMenuId() === null ? 'New Menu' : 'Edit Menu' }}
+            </h2>
+          </div>
+
+          <button
+            type="button"
+            class="close-button"
+            (click)="closeForm()"
+          >
+            ×
+          </button>
+        </div>
+
+        <form (ngSubmit)="saveMenu()">
+          <div class="form-group">
+            <label for="menuName">
+              Menu Name
+            </label>
+
+            <input
+              id="menuName"
+              name="menuName"
+              type="text"
+              maxlength="100"
+              [(ngModel)]="menuName"
+              placeholder="Summer Menu"
+              required
+            >
+          </div>
+
+          <div class="form-group">
+            <label for="menuDescription">
+              Description
+            </label>
+
+            <textarea
+              id="menuDescription"
+              name="menuDescription"
+              rows="4"
+              [(ngModel)]="menuDescription"
+              placeholder="Optional menu description"
+            ></textarea>
+          </div>
+
+          @if (formError()) {
+            <div class="form-error">
+              {{ formError() }}
+            </div>
+          }
+
+          <div class="modal-actions">
+            <button
+              type="button"
+              class="cancel-button"
+              (click)="closeForm()"
+              [disabled]="isSaving()"
+            >
+              Cancel
+            </button>
+
+            <button
+              type="submit"
+              class="save-button"
+              [disabled]="isSaving()"
+            >
+              @if (isSaving()) {
+                Saving...
+              } @else {
+                {{ editingMenuId() === null ? 'Create Menu' : 'Save Changes' }}
+              }
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+</div>

@@ -42,3 +42,15 @@ __screenshots__/
 # System files
 .DS_Store
 Thumbs.db
+
+
+node_modules/
+dist/
+.angular/
+
+.env
+server/.env
+
+cookies.txt
+server/cookies.txt
+

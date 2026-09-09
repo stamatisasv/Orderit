@@ -1,12 +1,33 @@
 import { Component, signal } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
+import { filter } from 'rxjs';
+
+import { Navbar } from './shared/navbar/navbar';
 
 @Component({
-  imports: [RouterOutlet],
   selector: 'app-root',
-  styleUrl: './app.css',
+  imports: [RouterOutlet, Navbar],
   templateUrl: './app.html',
+  styleUrl: './app.css'
 })
 export class App {
-  protected readonly title = signal('orderit');
+  isAdminRoute = signal(false);
+
+  constructor(private router: Router) {
+    this.updateRoute();
+
+    this.router.events
+      .pipe(
+        filter(event => event instanceof NavigationEnd)
+      )
+      .subscribe(() => {
+        this.updateRoute();
+      });
+  }
+
+  private updateRoute(): void {
+    this.isAdminRoute.set(
+      this.router.url.startsWith('/admin')
+    );
+  }
 }

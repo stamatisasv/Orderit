@@ -1,0 +1,193 @@
+<div class="menu-builder">
+  <a routerLink="/admin/menu" class="back-link">
+    ← Back to Menus
+  </a>
+
+  <header class="builder-header">
+    <div>
+      <p class="section-label">MENU BUILDER</p>
+
+      <h1>
+        {{ menu()?.name || 'Menu' }}
+      </h1>
+
+      <p class="page-description">
+        Manage categories and products for this menu.
+      </p>
+    </div>
+
+    <button
+      type="button"
+      class="create-button"
+      (click)="openCreateCategory()"
+    >
+      + Add Category
+    </button>
+  </header>
+
+  @if (isLoading()) {
+    <div class="state-card">
+      Loading categories...
+    </div>
+  }
+
+  @if (errorMessage()) {
+    <div class="error-message">
+      {{ errorMessage() }}
+    </div>
+  }
+
+  @if (!isLoading() && !errorMessage()) {
+    @if (categories().length === 0) {
+      <div class="empty-state">
+        <h2>No categories yet</h2>
+        <p>
+          Add the first category to this menu.
+        </p>
+      </div>
+    } @else {
+      <div class="categories-list">
+        @for (
+          category of categories();
+          track category.id
+        ) {
+          <div class="category-card">
+            <div class="category-content">
+              <h2>{{ category.name }}</h2>
+
+              <p>
+                {{
+                  category.description ||
+                  'No description'
+                }}
+              </p>
+            </div>
+
+            <div class="category-actions">
+              <button
+                type="button"
+                class="secondary-button"
+                (click)="openEditCategory(category)"
+              >
+                Edit
+              </button>
+
+              <button
+                type="button"
+                class="delete-button"
+                (click)="deleteCategory(category)"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        }
+      </div>
+    }
+  }
+
+  @if (showCategoryForm()) {
+    <div
+      class="modal-backdrop"
+      (click)="closeCategoryForm()"
+    >
+      <div
+        class="category-modal"
+        (click)="$event.stopPropagation()"
+      >
+        <div class="modal-header">
+          <div>
+            <p class="section-label">
+              {{
+                editingCategoryId() === null
+                  ? 'CREATE CATEGORY'
+                  : 'EDIT CATEGORY'
+              }}
+            </p>
+
+            <h2>
+              {{
+                editingCategoryId() === null
+                  ? 'New Category'
+                  : 'Edit Category'
+              }}
+            </h2>
+          </div>
+
+          <button
+            type="button"
+            class="close-button"
+            (click)="closeCategoryForm()"
+          >
+            ×
+          </button>
+        </div>
+
+        <form (ngSubmit)="saveCategory()">
+          <div class="form-group">
+            <label for="categoryName">
+              Category Name
+            </label>
+
+            <input
+              id="categoryName"
+              name="categoryName"
+              type="text"
+              maxlength="100"
+              [(ngModel)]="categoryName"
+              placeholder="Coffee"
+              required
+            >
+          </div>
+
+          <div class="form-group">
+            <label for="categoryDescription">
+              Description
+            </label>
+
+            <textarea
+              id="categoryDescription"
+              name="categoryDescription"
+              rows="4"
+              [(ngModel)]="categoryDescription"
+              placeholder="Optional category description"
+            ></textarea>
+          </div>
+
+          @if (formError()) {
+            <div class="form-error">
+              {{ formError() }}
+            </div>
+          }
+
+          <div class="modal-actions">
+            <button
+              type="button"
+              class="cancel-button"
+              (click)="closeCategoryForm()"
+              [disabled]="isSaving()"
+            >
+              Cancel
+            </button>
+
+            <button
+              type="submit"
+              class="save-button"
+              [disabled]="isSaving()"
+            >
+              @if (isSaving()) {
+                Saving...
+              } @else {
+                {{
+                  editingCategoryId() === null
+                    ? 'Create Category'
+                    : 'Save Changes'
+                }}
+              }
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+</div>

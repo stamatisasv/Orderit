@@ -1,0 +1,76 @@
+<div class="admin-layout">
+  <aside class="admin-sidebar">
+    <div class="admin-brand">
+      <h2>Orderit</h2>
+      <span>Admin</span>
+    </div>
+
+    <nav class="admin-navigation">
+      <a
+        routerLink="/admin"
+        routerLinkActive="active"
+        [routerLinkActiveOptions]="{ exact: true }"
+        class="nav-item"
+      >
+        Dashboard
+      </a>
+
+      <a
+        routerLink="/admin/menu"
+        routerLinkActive="active"
+        class="nav-item"
+      >
+        Menu
+      </a>
+
+      <a
+        routerLink="/admin/tables"
+        routerLinkActive="active"
+        class="nav-item"
+      >
+        Tables
+      </a>
+
+      <a
+        routerLink="/admin/orders"
+        routerLinkActive="active"
+        class="nav-item"
+      >
+        Orders
+      </a>
+
+      <a
+        routerLink="/admin/waiters"
+        routerLinkActive="active"
+        class="nav-item"
+      >
+        Waiters
+      </a>
+    </nav>
+
+    <button
+      class="logout-button"
+      type="button"
+      [disabled]="isLoggingOut()"
+      (click)="logout()"
+    >
+      {{ isLoggingOut() ? 'Logging out...' : 'Logout' }}
+    </button>
+  </aside>
+
+  <section class="admin-content">
+    <div class="admin-topbar">
+      <a
+        routerLink="/"
+        target="_blank"
+        class="view-site-button"
+      >
+        View Customer Site ↗
+      </a>
+    </div>
+
+    <main class="admin-page">
+      <router-outlet></router-outlet>
+    </main>
+  </section>
+</div>

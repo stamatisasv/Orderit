@@ -34,7 +34,7 @@ export class Login {
     this.successMessage.set('');
 
     if (!this.username.trim() || !this.password) {
-      this.errorMessage.set('Username and password are required.');
+      this.errorMessage.set('Email and password are required.');
       return;
     }
 
@@ -44,14 +44,14 @@ export class Login {
       .login(this.username.trim(), this.password)
       .pipe(timeout(8000))
       .subscribe({
-        next: () => {
+        next: (response) => {
           this.isLoading.set(false);
           this.successMessage.set(
             'Login successful. Redirecting...'
           );
 
           setTimeout(() => {
-            this.router.navigate(['/admin']);
+            this.router.navigate([response.admin.role === 'admin' ? '/admin' : '/admin/orders']);
           }, 1000);
         },
 
@@ -60,7 +60,7 @@ export class Login {
 
           if (error.status === 401) {
             this.errorMessage.set(
-              'Invalid username or password.'
+              'Invalid email or password.'
             );
             return;
           }
@@ -80,7 +80,7 @@ export class Login {
           }
 
           this.errorMessage.set(
-            'Something went wrong. Please try again.'
+            error.message ?? 'Unable to sign in. Please try again.'
           );
         }
       });

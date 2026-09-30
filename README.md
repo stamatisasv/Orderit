@@ -2,6 +2,16 @@
 
 This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 22.1.5.
 
+## Backend migration
+
+Supabase is the selected backend. The legacy Express/MySQL server, Sequelize models,
+and server dependencies have been removed.
+
+The Angular authentication, menu, category, and product services still call
+`http://localhost:3000`, and the menu builder uses that address for product images.
+These integrations must be migrated to Supabase before those features will work.
+This checkout does not yet contain a Supabase client or configuration.
+
 ## Development server
 
 To start a local development server, run:

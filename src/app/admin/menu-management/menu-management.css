@@ -1,3 +1,4 @@
+@layer components {
 .menu-page {
   width: 100%;
 }
@@ -15,7 +16,7 @@
   font-size: 12px;
   font-weight: 600;
   letter-spacing: 2px;
-  color: #777777;
+  color: var(--muted);
 }
 
 .menu-header h1 {
@@ -25,21 +26,21 @@
 
 .page-description {
   margin: 8px 0 0;
-  color: #777777;
+  color: var(--muted);
 }
 
 .create-button {
   padding: 13px 18px;
   border: none;
   border-radius: 8px;
-  background-color: #111111;
+  background-color: var(--ink);
   color: white;
   font-weight: 600;
   cursor: pointer;
 }
 
 .create-button:hover {
-  background-color: #303030;
+  background-color: var(--ink);
 }
 
 .menus-grid {
@@ -49,7 +50,7 @@
 
 .menu-card {
   padding: 24px;
-  background-color: white;
+  background-color: var(--paper);
   border-radius: 14px;
 }
 
@@ -73,18 +74,18 @@
 }
 
 .status.active {
-  background-color: #e5f5e8;
-  color: #267a37;
+  background-color: var(--accent-soft);
+  color: var(--ink);
 }
 
 .status.inactive {
-  background-color: #eeeeee;
-  color: #666666;
+  background-color: var(--line);
+  color: var(--muted);
 }
 
 .menu-description {
   margin: 20px 0;
-  color: #666666;
+  color: var(--muted);
 }
 
 .menu-actions {
@@ -102,35 +103,35 @@
 }
 
 .secondary-button {
-  border: 1px solid #dddddd;
-  background-color: white;
-  color: #111111;
+  border: 1px solid var(--line);
+  background-color: var(--paper);
+  color: var(--ink);
 }
 
 .secondary-button:hover {
-  background-color: #f2f2f2;
+  background-color: var(--paper);
 }
 
 .delete-button {
-  border: 1px solid #dddddd;
-  background-color: white;
-  color: #b42318;
+  border: 1px solid var(--line);
+  background-color: var(--paper);
+  color: var(--danger);
 }
 
 .delete-button:hover {
-  background-color: #fff0ee;
+  background-color: var(--accent-soft);
 }
 
 .state-message,
 .error-message,
 .empty-state {
   padding: 30px;
-  background-color: white;
+  background-color: var(--paper);
   border-radius: 14px;
 }
 
 .error-message {
-  color: #b42318;
+  color: var(--danger);
 }
 
 .empty-state {
@@ -158,7 +159,7 @@
   padding: 28px;
   box-sizing: border-box;
   border-radius: 16px;
-  background-color: white;
+  background-color: var(--paper);
 }
 
 .modal-header {
@@ -176,7 +177,7 @@
 .close-button {
   border: none;
   background: transparent;
-  color: #555555;
+  color: var(--muted);
   font-size: 28px;
   line-height: 1;
   cursor: pointer;
@@ -198,10 +199,10 @@
   width: 100%;
   box-sizing: border-box;
   padding: 12px 14px;
-  border: 1px solid #d8d8d8;
+  border: 1px solid var(--line);
   border-radius: 8px;
-  background-color: white;
-  color: #111111;
+  background-color: var(--paper);
+  color: var(--ink);
   font: inherit;
 }
 
@@ -212,15 +213,15 @@
 .form-group input:focus,
 .form-group textarea:focus {
   outline: none;
-  border-color: #111111;
+  border-color: var(--ink);
 }
 
 .form-error {
   margin-bottom: 18px;
   padding: 12px;
   border-radius: 8px;
-  background-color: #fff0ee;
-  color: #b42318;
+  background-color: var(--accent-soft);
+  color: var(--danger);
   font-size: 14px;
 }
 
@@ -240,27 +241,28 @@
 }
 
 .cancel-button {
-  border: 1px solid #dddddd;
-  background-color: white;
-  color: #111111;
+  border: 1px solid var(--line);
+  background-color: var(--paper);
+  color: var(--ink);
 }
 
 .cancel-button:hover {
-  background-color: #f2f2f2;
+  background-color: var(--paper);
 }
 
 .save-button {
   border: none;
-  background-color: #111111;
+  background-color: var(--ink);
   color: white;
 }
 
 .save-button:hover {
-  background-color: #303030;
+  background-color: var(--ink);
 }
 
 .cancel-button:disabled,
 .save-button:disabled {
   cursor: not-allowed;
   opacity: 0.6;
+}
 }

@@ -1,0 +1,36 @@
+<main id="order-top">
+  <header><p class="eyebrow">ORDERIT · AT YOUR TABLE</p><h1>{{ basketOnly ? 'Your table’s basket' : 'Order for your table' }}</h1><p>Choose your favourites. Your whole table shares one basket.</p></header>
+  @if (guest.error()) { <p role="alert" class="error">{{ guest.error() }}</p> }
+  @if (guest.message()) { <p role="status" class="success">{{ guest.message() }}</p> }
+  @if (loading()) { <p role="status">Loading…</p> }
+  <label class="table-selector">Your table<select [ngModel]="guest.token()" (ngModelChange)="select($event)" [disabled]="guest.busy()"><option value="">Choose your table</option>@for (table of tables(); track table.id) { <option [value]="table.qr_token">{{ table.name }}</option> }</select></label>
+  @if (guest.state(); as state) {
+    <section class="table-bar"><div><h2>{{ state.name }}</h2><p>Shared with everyone selecting this table. Your basket stays in sync.</p></div><div class="actions"><button (click)="guest.help('waiter')" [disabled]="guest.busy() || requested('waiter')">{{ requested('waiter') ? 'Waiter requested' : 'Call waiter' }}</button><button (click)="guest.help('bill')" [disabled]="guest.busy() || requested('bill')">{{ requested('bill') ? 'Bill requested' : 'Request bill' }}</button></div>
+    @for (request of state.requests; track request.kind) { <p>{{ request.kind === 'waiter' ? 'Waiter' : 'Bill' }} request: {{ request.status === 'acknowledged' ? 'Staff are on their way' : 'Waiting for staff' }}</p> }</section>
+    <nav class="actions" aria-label="Ordering steps"><a routerLink="/order" [queryParams]="{table: guest.token()}">Browse dishes</a><a routerLink="/basket" [queryParams]="{table: guest.token()}">Basket ({{ guest.count() }})</a><a [routerLink]="[]" fragment="table-orders" queryParamsHandling="preserve">Table orders ({{ state.orders.length }})</a></nav>
+    <div class="layout" [class.basket-only]="basketOnly">
+      @if (!basketOnly) {
+        <section><h2>Menu</h2><label>Find a dish or drink<input type="search" [(ngModel)]="search" placeholder="Search dishes or drinks" enterkeyhint="search"></label>
+        <div class="category-tabs" aria-label="Menu categories">@for (category of categoryNames(); track category) { <button [class.selected]="selectedCategory() === category" [attr.aria-pressed]="selectedCategory() === category" (click)="selectedCategory.set(category)">{{ category }}</button> }</div>
+        <div class="products">@for (product of filteredProducts(); track product.id) {
+          <article>@if (product.imageUrl) { <img [src]="product.imageUrl" [alt]="product.name" loading="lazy"> }<h3>{{ product.name }}</h3><p>{{ product.description }}</p><div class="actions"><strong>{{ product.price | currency:'EUR' }}</strong><button (click)="guest.change(product.id, 1)" [disabled]="guest.busy() || !product.isAvailable">{{ product.isAvailable ? '+ Add' : 'Unavailable' }}</button></div></article>
+        } @empty { <p>No matching dishes.</p><button (click)="search = ''; selectedCategory.set('All')">Show all dishes</button> }</div></section>
+      }
+      <section class="basket" id="shared-basket"><h2>Shared basket</h2><p>Review all items together. Submitting sends the whole table basket.</p>
+        @for (item of state.basket; track item.product_id) {
+          <div class="basket-line"><div><strong>{{ item.name }}</strong><p>{{ item.price | currency:'EUR' }} each</p>@if (!item.available) { <p class="error">Unavailable — remove before ordering.</p> }</div><div class="actions"><button (click)="guest.change(item.product_id, -1)" [disabled]="guest.busy()" [attr.aria-label]="'Remove one ' + item.name">−</button><span>{{ item.quantity }}</span><button (click)="guest.change(item.product_id, 1)" [disabled]="guest.busy() || !item.available || item.quantity >= 99" [attr.aria-label]="'Add one ' + item.name">+</button></div></div>
+        } @empty { <p>Your table basket is empty. Add something from the menu.</p> }
+        <label>Kitchen notes (optional)<textarea [(ngModel)]="notes" maxlength="1000" rows="3" placeholder="Any requests for the kitchen?" [disabled]="guest.busy()"></textarea></label>
+        <p class="total">Estimated total {{ guest.total() | currency:'EUR' }}</p>
+        <button class="primary" (click)="guest.checkout(notes)" [disabled]="!canCheckout()">{{ guest.busy() ? 'Please wait…' : (guest.pendingCheckout() ? 'Retry / confirm submission' : 'Send table order') }}</button>
+        <p>Staff must accept your order before preparation. Final prices are checked when submitted.</p>
+      </section>
+    </div>
+    @if (!basketOnly && guest.count()) { <a class="mobile-basket" routerLink="/basket" [queryParams]="{table: guest.token()}"><span>View table basket · {{ guest.count() }} items</span><strong>{{ guest.total() | currency:'EUR' }} ↗</strong></a> }
+    <section id="table-orders"><h2>Table orders</h2><p>Orders from the current visit, including those placed by other guests.</p>
+      @for (order of state.orders; track order.id) {
+        <article class="existing-order"><div class="actions"><strong>#{{ order.id.slice(0, 8) }}</strong><span class="badge">{{ statusLabel(order.status) }}</span><span>{{ order.createdAt | date:'shortTime' }}</span></div><ul>@for (item of order.items; track $index) { <li>{{ item.quantity }} × {{ item.name }} — {{ item.total | currency:'EUR' }}</li> }</ul>@if (order.notes) { <p>{{ order.notes }}</p> }<strong>Total {{ order.total | currency:'EUR' }}</strong></article>
+      } @empty { <p>No orders have been placed during this visit.</p> }
+    </section>
+  } @else if (!loading()) { <p>Choose your table above to see its basket and orders.</p> }
+</main>

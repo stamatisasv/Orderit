@@ -1,2 +1,45 @@
-<h1>Orders</h1>
-<p>Manage customer orders.</p>
+<header><div><h1>Orders</h1><p>Review orders and keep the kitchen and floor in sync.</p></div><div class="actions"><button (click)="refresh()" [disabled]="busy() || loading()">Refresh</button>@if (isAdmin()) { <button (click)="edit()" [disabled]="busy() || editing()">+ Create order</button> }</div></header>
+@if (error()) { <p class="error" role="alert">{{ error() }}</p> }
+@if (message()) { <p class="success" role="status">{{ message() }}</p> }
+<section class="panel"><h2>Waiter calls & bill requests</h2>
+@for (request of requests(); track request.id) {
+  <div class="actions"><strong>{{ tableName(request.table_id) }} · {{ request.kind === 'bill' ? 'Bill requested' : 'Waiter requested' }}</strong><span>{{ request.status }} · {{ request.created_at | date:'shortTime' }}</span>
+  @if (request.status === 'pending') { <button (click)="handleRequest(request.id, 'acknowledged')" [disabled]="busy()">Acknowledge</button> }
+  <button (click)="handleRequest(request.id, 'done')" [disabled]="busy()">Done</button></div>
+} @empty { <p>No open assistance requests.</p> }
+</section>
+<div class="filters">
+  <label>Status<select [(ngModel)]="filterStatus" (ngModelChange)="refresh()" [disabled]="busy()"><option value="">All statuses</option>@for (status of statuses; track status) { <option [value]="status">{{ status }}</option> }</select></label>
+  <label>Table<select [(ngModel)]="filterTable" (ngModelChange)="refresh()" [disabled]="busy()"><option [ngValue]="null">All tables</option>@for (table of tables(); track table.id) { <option [ngValue]="table.id">{{ table.name }}</option> }</select></label>
+</div>
+@if (editing()) {
+<form class="panel" (ngSubmit)="save()">
+  <h2>{{ expected ? 'Edit order' : 'Create order' }}</h2>
+  <fieldset [disabled]="busy()">
+    <label>Table<select name="table" [(ngModel)]="tableId" required><option [ngValue]="null">Choose a table</option>@for (table of tables(); track table.id) { <option [ngValue]="table.id" [disabled]="!table.is_active && table.id !== tableId">{{ table.name }}{{ table.is_active ? '' : ' (inactive)' }}</option> }</select></label>
+    <div class="actions"><label>Add product<select name="product" [(ngModel)]="productId"><option [ngValue]="null">Choose from the active menu</option>@for (product of products(); track product.id) { <option [ngValue]="product.id">{{ product.name }} — {{ product.price | currency:'EUR' }}</option> }</select></label><button type="button" (click)="addLine()" [disabled]="!productId || lines.length >= 50">Add item</button></div>
+    @if (!products().length) { <p>No available products on the active menu. Existing order lines can still be adjusted.</p> }
+    @for (line of lines; track $index; let i = $index) {
+      <div class="line"><span>{{ line.name }} · {{ line.price | currency:'EUR' }}</span><label>Quantity<input type="number" [name]="'quantity-' + i" [(ngModel)]="line.quantity" min="1" max="99" step="1" required></label><strong>{{ line.price * line.quantity | currency:'EUR' }}</strong><button type="button" (click)="removeLine(i)">Remove</button></div>
+    }
+    <label>Order notes<textarea name="notes" [(ngModel)]="notes" maxlength="1000" rows="3"></textarea></label>
+    <p>Estimated total: <strong>{{ total() | currency:'EUR' }}</strong>. Final prices are checked when saving.</p>
+    <div class="actions"><button type="submit" [disabled]="!lines.length">Save order</button><button type="button" (click)="editing.set(false)">Cancel</button></div>
+  </fieldset>
+</form>
+}
+@if (loading()) { <p role="status">Loading orders…</p> }
+<p class="muted">Showing up to 200 most recent matching orders. Updates every 3 seconds when you are not editing.</p>
+<div class="grid">
+@for (order of orders(); track order.id + order.updatedAt) {
+  <article class="panel"><div class="actions"><h2>{{ tableName(order.table_id) }}</h2><span class="badge">{{ order.status }}</span></div>
+    <p class="muted">#{{ order.id.slice(0, 8) }} · {{ order.createdAt | date:'medium' }}</p>
+    <ul>@for (item of order.order_items; track item.id) { <li>{{ item.quantity }} × {{ item.product_name }} <strong>{{ item.line_total | currency:'EUR' }}</strong></li> }</ul>
+    @if (order.notes) { <p class="notes">{{ order.notes }}</p> }
+    <p class="total">Total {{ order.total | currency:'EUR' }}</p>
+    @if (order.status === 'pending') { <div class="actions"><button (click)="status(order, 'accepted')" [disabled]="busy() || editing()">Accept order</button><button (click)="status(order, 'cancelled')" [disabled]="busy() || editing()">Decline</button></div> }
+    <label>Status<select [ngModel]="order.status" (ngModelChange)="status(order, $event)" [disabled]="busy() || editing()">@for (value of allowedStatuses(order); track value) { <option [value]="value">{{ value }}</option> }</select></label>
+    @if (isAdmin()) { <div class="actions"><button (click)="edit(order)" [disabled]="busy() || editing() || order.status === 'served' || order.status === 'cancelled'">Edit items / notes</button><button class="danger" (click)="remove(order)" [disabled]="busy() || editing()">Delete</button></div> }
+  </article>
+} @empty { @if (!loading()) { <p>No orders match these filters.</p> } }
+</div>

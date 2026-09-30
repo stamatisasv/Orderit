@@ -2,11 +2,12 @@ import { Component, signal } from '@angular/core';
 import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { filter } from 'rxjs';
 
+import { SwipeTabs } from './shared/swipe-tabs';
 import { Navbar } from './shared/navbar/navbar';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, Navbar],
+  imports: [RouterOutlet, Navbar, SwipeTabs],
   templateUrl: './app.html',
   styleUrl: './app.css'
 })

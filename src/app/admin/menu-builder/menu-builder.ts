@@ -1,6 +1,7 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
+import { of, switchMap } from 'rxjs';
 
 import {
   AdminCategory,
@@ -196,7 +197,7 @@ export class MenuBuilder implements OnInit {
         this.isSaving.set(false);
 
         this.formError.set(
-          error.error?.message ??
+          error.error?.message ?? error.message ??
             'Unable to save category.'
         );
       }
@@ -261,7 +262,7 @@ this.imageError.set('');
 
   this.currentProductImageUrl.set(
     product.imageUrl
-      ? `http://localhost:3000${product.imageUrl}`
+      ? product.imageUrl
       : null
   );
 
@@ -281,6 +282,11 @@ this.imageError.set('');
   }
 
   saveProduct(): void {
+    if (this.isSaving()) return;
+    if (this.imageError() || (this.imageChangedEvent && !this.croppedImageBlob)) {
+      this.formError.set(this.imageError() || 'Wait for the image crop before saving.');
+      return;
+    }
     const categoryId = this.selectedCategoryId();
 
     if (categoryId === null) return;
@@ -328,7 +334,15 @@ this.imageError.set('');
             this.productAvailable
           );
 
-    request.subscribe({
+    request.pipe(
+      switchMap((response) => {
+        // Retain the saved ID if upload fails, so retry updates rather than duplicates.
+        this.editingProductId.set(response.product.id);
+        return this.croppedImageBlob
+          ? this.adminProductService.uploadProductImage(this.menuId, categoryId, response.product.id, this.croppedImageBlob)
+          : of(response);
+      })
+    ).subscribe({
       next: () => {
         this.isSaving.set(false);
         this.showProductForm.set(false);
@@ -341,7 +355,7 @@ this.imageError.set('');
         this.isSaving.set(false);
 
         this.formError.set(
-          error.error?.message ??
+          error.error?.message ?? error.message ??
             'Unable to save product.'
         );
       }

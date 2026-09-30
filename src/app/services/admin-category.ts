@@ -1,6 +1,6 @@
-import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Injectable, inject } from '@angular/core';
+import { defer } from 'rxjs';
+import { SupabaseService } from './supabase';
 
 export interface AdminCategory {
   id: number;
@@ -12,74 +12,30 @@ export interface AdminCategory {
   updatedAt: string;
 }
 
-interface CategoriesResponse {
-  categories: AdminCategory[];
-}
 
-interface CategoryResponse {
-  message: string;
-  category: AdminCategory;
-}
-
-@Injectable({
-  providedIn: 'root'
-})
+@Injectable({ providedIn: 'root' })
 export class AdminCategoryService {
-  private apiUrl = 'http://localhost:3000/api/admin/menus';
 
-  constructor(private http: HttpClient) {}
+  private db = inject(SupabaseService).client;
 
-  getCategories(menuId: number): Observable<CategoriesResponse> {
-    return this.http.get<CategoriesResponse>(
-      `${this.apiUrl}/${menuId}/categories`,
-      { withCredentials: true }
-    );
-  }
-
-  createCategory(
-    menuId: number,
-    name: string,
-    description: string
-  ): Observable<CategoryResponse> {
-    return this.http.post<CategoryResponse>(
-      `${this.apiUrl}/${menuId}/categories`,
-      {
-        name,
-        description
-      },
-      {
-        withCredentials: true
-      }
-    );
-  }
-
-  updateCategory(
-    menuId: number,
-    categoryId: number,
-    name: string,
-    description: string
-  ): Observable<CategoryResponse> {
-    return this.http.put<CategoryResponse>(
-      `${this.apiUrl}/${menuId}/categories/${categoryId}`,
-      {
-        name,
-        description
-      },
-      {
-        withCredentials: true
-      }
-    );
-  }
-
-  deleteCategory(
-    menuId: number,
-    categoryId: number
-  ): Observable<{ message: string }> {
-    return this.http.delete<{ message: string }>(
-      `${this.apiUrl}/${menuId}/categories/${categoryId}`,
-      {
-        withCredentials: true
-      }
-    );
-  }
+  getCategories(menuId: number) { return defer(async () => {
+    const { data, error } = await this.db.from('categories').select('*').eq('menuId', menuId).order('sortOrder').order('id');
+    if (error) throw error;
+    return { categories: data as AdminCategory[] };
+  }); }
+  createCategory(menuId: number, name: string, description: string) { return defer(async () => {
+    const { data, error } = await this.db.from('categories').insert({ menuId, name, description }).select().single();
+    if (error) throw error;
+    return { category: data as AdminCategory, message: 'Category created.' };
+  }); }
+  updateCategory(menuId: number, id: number, name: string, description: string) { return defer(async () => {
+    const { data, error } = await this.db.from('categories').update({ name, description }).eq('menuId', menuId).eq('id', id).select().single();
+    if (error) throw error;
+    return { category: data as AdminCategory, message: 'Category updated.' };
+  }); }
+  deleteCategory(menuId: number, id: number) { return defer(async () => {
+    const { error } = await this.db.from('categories').delete().eq('menuId', menuId).eq('id', id).select('id').single();
+    if (error) throw error;
+    return { message: 'Category deleted.' };
+  }); }
 }

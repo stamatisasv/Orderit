@@ -1,31 +1,36 @@
 <div class="admin-layout">
-  <aside class="admin-sidebar">
+  <aside class="admin-sidebar" [class.menu-open]="menuOpen()">
     <div class="admin-brand">
       <h2>Orderit</h2>
-      <span>Admin</span>
+      <span>{{ isAdmin() ? 'Admin' : 'Waiter' }}</span>
     </div>
 
-    <nav class="admin-navigation">
+    <button class="staff-menu-toggle" (click)="menuOpen.set(!menuOpen())" [attr.aria-expanded]="menuOpen()" aria-controls="staff-navigation">{{ menuOpen() ? 'Close navigation ×' : 'Navigate ☰' }}</button>
+    <nav id="staff-navigation" class="admin-navigation" aria-label="Staff navigation" (click)="menuOpen.set(false)">
+      @if (isAdmin()) {
       <a
         routerLink="/admin"
-        routerLinkActive="active"
+        routerLinkActive="active" ariaCurrentWhenActive="page"
         [routerLinkActiveOptions]="{ exact: true }"
         class="nav-item"
       >
         Dashboard
       </a>
+      }
 
+      @if (isAdmin()) {
       <a
         routerLink="/admin/menu"
-        routerLinkActive="active"
+        routerLinkActive="active" ariaCurrentWhenActive="page"
         class="nav-item"
       >
         Menu
       </a>
+      }
 
       <a
         routerLink="/admin/tables"
-        routerLinkActive="active"
+        routerLinkActive="active" ariaCurrentWhenActive="page"
         class="nav-item"
       >
         Tables
@@ -33,19 +38,21 @@
 
       <a
         routerLink="/admin/orders"
-        routerLinkActive="active"
+        routerLinkActive="active" ariaCurrentWhenActive="page"
         class="nav-item"
       >
         Orders
       </a>
 
+      @if (isAdmin()) {
       <a
         routerLink="/admin/waiters"
-        routerLinkActive="active"
+        routerLinkActive="active" ariaCurrentWhenActive="page"
         class="nav-item"
       >
         Waiters
       </a>
+      }
     </nav>
 
     <button

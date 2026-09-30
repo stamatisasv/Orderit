@@ -14,7 +14,7 @@ import { OrdersManagement } from './admin/orders-management/orders-management';
 import { WaitersManagement } from './admin/waiters-management/waiters-management';
 import { MenuBuilder } from './admin/menu-builder/menu-builder';
 
-import { authGuard } from './guards/auth.guard';
+import { authGuard, adminGuard } from './guards/auth.guard';
 
 export const routes: Routes = [
   {
@@ -44,11 +44,17 @@ export const routes: Routes = [
     children: [
       {
         path: '',
+        canActivate: [adminGuard],
         component: Dashboard
       },
       {
         path: 'menu',
+        canActivate: [adminGuard],
         component: MenuManagement
+      },
+      {
+        path: 'tables/:id',
+        component: TablesManagement
       },
       {
         path: 'tables',
@@ -60,11 +66,13 @@ export const routes: Routes = [
       },
       {
         path: 'waiters',
+        canActivate: [adminGuard],
         component: WaitersManagement
       },
       {
   path: 'menu/:id',
-  component: MenuBuilder
+  canActivate: [adminGuard],
+        component: MenuBuilder
 } 
     ]
   }

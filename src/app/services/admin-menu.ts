@@ -1,6 +1,6 @@
-import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Injectable, inject } from '@angular/core';
+import { defer } from 'rxjs';
+import { SupabaseService } from './supabase';
 
 export interface AdminMenu {
   id: number;
@@ -11,84 +11,40 @@ export interface AdminMenu {
   updatedAt: string;
 }
 
-interface MenusResponse {
-  menus: AdminMenu[];
-}
 
-interface MenuResponse {
-  message: string;
-  menu: AdminMenu;
-}
-
-@Injectable({
-  providedIn: 'root'
-})
+@Injectable({ providedIn: 'root' })
 export class AdminMenuService {
-  private apiUrl = 'http://localhost:3000/api/admin/menus';
 
-  constructor(private http: HttpClient) {}
-getMenus(): Observable<MenusResponse> {
-  return this.http.get<MenusResponse>(
-    this.apiUrl,
-    { withCredentials: true }
-  );
-}
-  getMenu(id: number): Observable<{ menu: AdminMenu }> {
-  return this.http.get<{ menu: AdminMenu }>(
-    `${this.apiUrl}/${id}`,
-    { withCredentials: true }
-  );
-}
+  private db = inject(SupabaseService).client;
 
-  createMenu(
-    name: string,
-    description: string
-  ): Observable<MenuResponse> {
-    return this.http.post<MenuResponse>(
-      this.apiUrl,
-      {
-        name,
-        description
-      },
-      {
-        withCredentials: true
-      }
-    );
-  }
-
-  updateMenu(
-    id: number,
-    name: string,
-    description: string
-  ): Observable<MenuResponse> {
-    return this.http.put<MenuResponse>(
-      `${this.apiUrl}/${id}`,
-      {
-        name,
-        description
-      },
-      {
-        withCredentials: true
-      }
-    );
-  }
-
-  activateMenu(id: number): Observable<MenuResponse> {
-    return this.http.patch<MenuResponse>(
-      `${this.apiUrl}/${id}/activate`,
-      {},
-      {
-        withCredentials: true
-      }
-    );
-  }
-
-  deleteMenu(id: number): Observable<{ message: string }> {
-    return this.http.delete<{ message: string }>(
-      `${this.apiUrl}/${id}`,
-      {
-        withCredentials: true
-      }
-    );
-  }
+  getMenus() { return defer(async () => {
+    const { data, error } = await this.db.from('menus').select('*').order('id');
+    if (error) throw error;
+    return { menus: data as AdminMenu[] };
+  }); }
+  getMenu(id: number) { return defer(async () => {
+    const { data, error } = await this.db.from('menus').select('*').eq('id', id).single();
+    if (error) throw error;
+    return { menu: data as AdminMenu };
+  }); }
+  createMenu(name: string, description: string) { return defer(async () => {
+    const { data, error } = await this.db.from('menus').insert({ name, description }).select().single();
+    if (error) throw error;
+    return { menu: data as AdminMenu, message: 'Menu created.' };
+  }); }
+  updateMenu(id: number, name: string, description: string) { return defer(async () => {
+    const { data, error } = await this.db.from('menus').update({ name, description }).eq('id', id).select().single();
+    if (error) throw error;
+    return { menu: data as AdminMenu, message: 'Menu updated.' };
+  }); }
+  activateMenu(id: number) { return defer(async () => {
+    const { error } = await this.db.rpc('activate_menu', { p_menu_id: id });
+    if (error) throw error;
+    return { message: 'Menu activated.' };
+  }); }
+  deleteMenu(id: number) { return defer(async () => {
+    const { error } = await this.db.from('menus').delete().eq('id', id).select('id').single();
+    if (error) throw error;
+    return { message: 'Menu deleted.' };
+  }); }
 }

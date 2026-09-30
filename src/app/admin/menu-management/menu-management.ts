@@ -109,7 +109,7 @@ export class MenuManagement implements OnInit {
         this.isSaving.set(false);
 
         this.formError.set(
-          error.error?.message ?? 'Unable to save menu.'
+          error.error?.message ?? error.message ?? 'Unable to save menu.'
         );
       }
     });

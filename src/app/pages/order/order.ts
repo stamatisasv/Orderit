@@ -1,9 +1,4 @@
 import { Component } from '@angular/core';
-
-@Component({
-  imports: [],
-  selector: 'app-order',
-  styleUrl: './order.css',
-  templateUrl: './order.html',
-})
+import { GuestCheckout } from '../../shared/guest-checkout/guest-checkout';
+@Component({ imports: [GuestCheckout], selector: 'app-order', templateUrl: './order.html' })
 export class Order {}

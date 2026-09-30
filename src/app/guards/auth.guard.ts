@@ -15,3 +15,12 @@ export const authGuard: CanActivateFn = () => {
     })
   );
 };
+
+export const adminGuard: CanActivateFn = () => {
+  const authService = inject(AuthService);
+  const router = inject(Router);
+  return authService.me().pipe(
+    map(({ admin }) => admin.role === 'admin' ? true : router.createUrlTree(['/admin/orders'])),
+    catchError(() => of(router.createUrlTree(['/login'])))
+  );
+};

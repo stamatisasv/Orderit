@@ -1,3 +1,4 @@
+@layer components {
 .dashboard-header {
   margin-bottom: 32px;
 }
@@ -7,7 +8,7 @@
   font-size: 12px;
   font-weight: 600;
   letter-spacing: 2px;
-  color: #777777;
+  color: var(--muted);
 }
 
 .dashboard-header h1 {
@@ -23,13 +24,13 @@
 }
 
 .stat-card {
-  background-color: white;
+  background-color: var(--paper);
   border-radius: 14px;
   padding: 24px;
 }
 
 .stat-card span {
-  color: #666666;
+  color: var(--muted);
   font-size: 14px;
 }
 
@@ -41,7 +42,7 @@
 
 .stat-card p {
   margin: 0;
-  color: #999999;
+  color: var(--muted);
   font-size: 13px;
 }
 
@@ -52,7 +53,7 @@
 }
 
 .dashboard-card {
-  background-color: white;
+  background-color: var(--paper);
   border-radius: 14px;
   padding: 24px;
 }
@@ -72,14 +73,14 @@
   padding: 14px;
   border: none;
   border-radius: 8px;
-  background-color: #111111;
+  background-color: var(--ink);
   color: white;
   font-weight: 600;
   cursor: pointer;
 }
 
 .quick-actions button:hover {
-  background-color: #303030;
+  background-color: var(--ink);
 }
 
 .empty-state {
@@ -87,5 +88,6 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  color: #888888;
+  color: var(--muted);
+}
 }

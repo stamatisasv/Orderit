@@ -1,0 +1,21 @@
+@layer components {
+:host { display:block; color:var(--ink); }
+header { display:flex; justify-content:space-between; align-items:center; gap:20px; flex-wrap:wrap; margin-bottom:24px; }
+h1 { margin:0 0 8px; font-size:30px; } h2 { font-size:20px; margin:0 0 12px; }
+p { line-height:1.5; } .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:20px; }
+.panel { background:var(--paper); border:1px solid var(--line); border-radius:16px; padding:22px; margin-bottom:20px; min-width:0; }
+.actions { display:flex; align-items:center; flex-wrap:wrap; gap:10px; margin:12px 0; }
+button, .actions a { border:1px solid var(--line); border-radius:8px; background:var(--paper); color:var(--ink); padding:10px 14px; font:inherit; cursor:pointer; }
+button:disabled { opacity:.5; cursor:not-allowed; } button:hover:not(:disabled) { background:var(--accent-soft); }
+.danger { color:var(--danger); } .error { background:var(--accent-soft); color:var(--danger); padding:14px; border-radius:8px; }
+.success { color:var(--ink); background:var(--accent-soft); padding:14px; border-radius:8px; }
+label { display:flex; flex-direction:column; gap:7px; margin:12px 0; }
+input,select,textarea { box-sizing:border-box; max-width:100%; padding:10px; border:1px solid var(--line); border-radius:8px; font:inherit; }
+.check { flex-direction:row; align-items:center; } .badge { display:inline-block; background:var(--accent-soft); border-radius:20px; padding:5px 12px; font-size:13px; }
+.url { overflow-wrap:anywhere; font-size:13px; } .url a { color:var(--ink); }
+.filters { display:flex; gap:20px; flex-wrap:wrap; } .filters label { min-width:180px; }
+fieldset { border:0; padding:0; margin:0; min-width:0; } .line { display:flex; gap:12px; align-items:center; flex-wrap:wrap; border-bottom:1px solid var(--line); padding:8px 0; } .line input { width:80px; }
+.muted { color:var(--muted); font-size:13px; } li { margin:10px 0; } li strong { white-space:nowrap; } .total { font-weight:700; font-size:20px; } .notes { white-space:pre-wrap; background:var(--paper); padding:12px; border-radius:8px; }
+@media(max-width:600px) { .grid { grid-template-columns:1fr; } .panel { padding:16px; } }
+
+}

@@ -1,2 +1,31 @@
-<h1>Tables</h1>
-<p>Manage restaurant tables.</p>
+@if (tableId() !== null) { <a routerLink="/admin/tables">← Back to tables</a> }
+<header><div><h1>{{ tableId() === null ? 'Tables' : (visibleTables()[0]?.name ?? 'Table not found') }}</h1><p>Manage seating and the menu link for each table.</p></div><div class="actions">
+  <button (click)="refresh()" [disabled]="loading() || busy()">Refresh</button>
+  @if (isAdmin() && tableId() === null) { <button (click)="edit()" [disabled]="busy()">+ Add table</button> }
+</div></header>
+@if (error()) { <p class="error" role="alert">{{ error() }}</p> }
+@if (message()) { <p class="success" role="status">{{ message() }}</p> }
+@if (showForm()) {
+  <form (ngSubmit)="save()" class="panel">
+    <h2>{{ editingId === null ? 'New table' : 'Edit table' }}</h2>
+    <label>Table name<input name="name" [(ngModel)]="name" required maxlength="80" [disabled]="busy()" placeholder="e.g. Terrace 1"></label>
+    <label class="check"><input type="checkbox" name="active" [(ngModel)]="active" [disabled]="busy()"> Accept orders</label>
+    <div class="actions"><button type="submit" [disabled]="busy() || !name.trim()">{{ busy() ? 'Saving…' : 'Save table' }}</button><button type="button" (click)="showForm.set(false)" [disabled]="busy()">Cancel</button></div>
+  </form>
+}
+@if (loading()) { <p role="status">Loading tables…</p> }
+<div class="grid">
+  @for (table of visibleTables(); track table.id) {
+    <article class="panel"><h2>{{ table.name }}</h2><span class="badge">{{ table.is_active ? 'Active' : 'Inactive' }}</span>
+      @if (tableId() === null) {
+        <div class="actions"><a [routerLink]="['/admin/tables', table.id]">Open table #{{ table.id }}</a></div>
+      } @else {
+        <p>Customer menu link — use this URL when printing a QR code for guests.</p>
+        <p class="url"><a [href]="link(table)" target="_blank" rel="noopener">{{ link(table) }}</a></p>
+        <button (click)="copy(table)">Copy customer menu link</button>
+      }
+      <div class="actions"><a routerLink="/admin/orders" [queryParams]="{ table: table.id }">View orders</a></div>
+      <details><summary>Manage table</summary><div class="actions"><button (click)="newVisit(table)" [disabled]="busy()">Start new visit</button></div>@if (isAdmin()) { <div class="actions"><button (click)="edit(table)" [disabled]="busy()">Edit</button><button (click)="rotate(table)" [disabled]="busy()">Replace QR link</button><button class="danger" (click)="remove(table)" [disabled]="busy()">Delete</button></div> }</details>
+    </article>
+  } @empty { @if (!loading()) { <p>{{ tableId() === null ? 'No tables yet. Add your first table to get started.' : 'This table does not exist.' }}</p> } }
+</div>

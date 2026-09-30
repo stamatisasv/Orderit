@@ -1,10 +1,10 @@
-<nav>
-  <h2>Orderit</h2>
-
-  <div>
-    <a routerLink="/">Home</a>
-    <a routerLink="/menu">Menu</a>
-    <a routerLink="/order">Order Now</a>
-    <a routerLink="/basket">Basket</a>
+<nav aria-label="Main navigation">
+  <a class="wordmark" routerLink="/" aria-label="Orderit home">Orderit<span aria-hidden="true"><svg class="brand-star" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true" focusable="false"><path d="M16 2v28M2 16h28M6.1 6.1l19.8 19.8M6.1 25.9L25.9 6.1"/></svg></span></a>
+  @if (guest.state(); as table) { <a class="current-table" routerLink="/order">{{ table.name }}</a> }
+  <div class="nav-links">
+    <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact:true}" ariaCurrentWhenActive="page"><span class="nav-icon" aria-hidden="true">⌂</span>Home</a>
+    <a routerLink="/menu" routerLinkActive="active" ariaCurrentWhenActive="page"><span class="nav-icon" aria-hidden="true">☷</span>Menu</a>
+    <a routerLink="/order" routerLinkActive="active" ariaCurrentWhenActive="page"><span class="nav-icon" aria-hidden="true">＋</span>Order</a>
+    <a class="basket-link" routerLink="/basket" routerLinkActive="active" ariaCurrentWhenActive="page"><span class="nav-icon" aria-hidden="true">▱</span>Basket <span class="basket-count">{{ guest.count() }}</span></a>
   </div>
 </nav>

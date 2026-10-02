@@ -1,2 +1,189 @@
-<h1>Waiters</h1>
-<p>Manage waiters.</p>
+<header class="waiters-header">
+  <div>
+    <p class="section-label">YOUR TEAM</p>
+    <h1>Waiters</h1>
+    <p>Give your team access to tables, orders and guest requests.</p>
+  </div>
+  <div class="actions">
+    <button (click)="refresh()" [disabled]="busy() || loading()">
+      {{ loading() ? 'Loading…' : 'Refresh' }}</button
+    ><button class="primary" (click)="edit()" [disabled]="busy() || !configured()">
+      ＋ Add waiter
+    </button>
+  </div>
+</header>
+@if (error() && !editing() && !removing()) {
+  <p role="alert" class="error feedback">{{ error() }}</p>
+}
+@if (message()) {
+  <p role="status" class="success feedback">{{ message() }}</p>
+}
+<section class="team-panel" aria-label="Waiter list">
+  <div class="team-toolbar">
+    <strong>{{ waiters().length }} {{ waiters().length === 1 ? 'waiter' : 'waiters' }}</strong
+    ><label
+      >Find a team member<input
+        type="search"
+        [ngModel]="query()"
+        (ngModelChange)="query.set($event)"
+        placeholder="Search name or email"
+    /></label>
+  </div>
+  @if (loading() && !configured()) {
+    <p role="status">Loading your team…</p>
+  } @else if (!configured()) {
+    <p>The waiter list is unavailable. Complete setup, then refresh.</p>
+  } @else {
+    @for (waiter of filtered(); track waiter.user_id) {
+      <article class="waiter-row">
+        <span class="avatar" aria-hidden="true">{{ waiter.name.slice(0, 1).toUpperCase() }}</span>
+        <div class="waiter-info">
+          <h2>{{ waiter.name }}</h2>
+          <p>{{ waiter.email }}</p>
+          <span class="badge">{{
+            waiter.email_confirmed_at ? 'Waiter access' : 'Awaiting email confirmation'
+          }}</span>
+        </div>
+        <div class="actions">
+          <button
+            (click)="edit(waiter)"
+            [disabled]="busy() || loading()"
+            [attr.aria-label]="'Edit ' + waiter.name"
+          >
+            Edit</button
+          ><button
+            class="danger"
+            (click)="removing.set(waiter)"
+            [disabled]="busy() || loading()"
+            [attr.aria-label]="'Remove access for ' + waiter.name"
+          >
+            Remove access
+          </button>
+        </div>
+      </article>
+    } @empty {
+      <div class="empty-team">
+        <h2>{{ query() ? 'No matching team members.' : 'A good team starts here.' }}</h2>
+        <p>
+          {{
+            query()
+              ? 'Try another name or email.'
+              : 'Create your first waiter’s login here. They’ll have access to orders and tables, while admin settings stay with you.'
+          }}
+        </p>
+        @if (!query()) {
+          <button (click)="edit()">Add your first waiter ↗</button>
+        }
+      </div>
+    }
+  }
+</section>
+@if (editing()) {
+  <section class="team-panel editor" aria-label="Waiter details">
+    <div class="editor-heading">
+      <h2>{{ selected ? 'Edit waiter' : 'Add to your team' }}</h2>
+      <button (click)="close()" [disabled]="busy()" aria-label="Close waiter form">×</button>
+    </div>
+    @if (error()) {
+      <p role="alert" class="error feedback">{{ error() }}</p>
+    }
+    <form (ngSubmit)="save()">
+      <label
+        >Display name<input
+          #nameInput
+          name="waiterName"
+          [(ngModel)]="name"
+          minlength="2"
+          maxlength="100"
+          required
+          autocomplete="name"
+          [disabled]="busy()"
+      /></label>
+      @if (!selected) {
+        <label
+          >Email address<input
+            type="email"
+            name="waiterEmail"
+            [(ngModel)]="email"
+            required
+            maxlength="254"
+            autocomplete="email"
+            [disabled]="busy()"
+        /></label>
+        <label
+          >Account type
+          <select
+            name="accountMode"
+            [(ngModel)]="accountMode"
+            (ngModelChange)="password = ''"
+            [disabled]="busy()"
+          >
+            <option value="new">Create new account</option>
+            <option value="existing">Link existing account</option>
+          </select>
+        </label>
+        @if (accountMode === 'new') {
+          <label
+            >Initial password
+            <input
+              type="password"
+              name="waiterPassword"
+              [(ngModel)]="password"
+              required
+              minlength="8"
+              maxlength="128"
+              autocomplete="new-password"
+              [disabled]="busy()"
+            />
+          </label>
+          <p class="muted">
+            Creates their login and waiter access together. Share these credentials privately with
+            your waiter.
+          </p>
+        } @else {
+          <p class="muted">
+            Restore access for someone who already has a login. Their password stays the same.
+          </p>
+        }
+      } @else {
+        <p class="muted">{{ selected.email }} · Waiter access</p>
+      }
+      <p class="permission-note">
+        Waiters can manage orders, view tables, start new visits and handle guest requests. They
+        cannot manage menus or staff.
+      </p>
+      <div class="actions">
+        <button type="button" (click)="close()" [disabled]="busy()">Cancel</button
+        ><button class="primary" type="submit" [disabled]="busy()">
+          {{
+            busy()
+              ? 'Saving…'
+              : selected
+                ? 'Save changes'
+                : accountMode === 'new'
+                  ? 'Create waiter'
+                  : 'Add waiter access'
+          }}
+        </button>
+      </div>
+    </form>
+  </section>
+}
+@if (removing(); as waiter) {
+  <section class="team-panel removal" role="alert" aria-label="Confirm access removal">
+    <h2>Remove {{ waiter.name }}’s waiter access?</h2>
+    <p>
+      They will lose access to staff pages and restaurant data. Their sign-in account remains, so
+      you can add them again later.
+    </p>
+    @if (error()) {
+      <p role="alert" class="error feedback">{{ error() }}</p>
+    }
+    <div class="actions">
+      <button #keepAccess (click)="removing.set(null)" [disabled]="busy()">Keep access</button
+      ><button class="danger" (click)="remove()" [disabled]="busy()">
+        {{ busy() ? 'Removing…' : 'Remove waiter access' }}
+      </button>
+    </div>
+  </section>
+}

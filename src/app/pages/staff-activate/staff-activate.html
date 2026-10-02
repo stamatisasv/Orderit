@@ -1,0 +1,40 @@
+<main>
+  <section class="activation-card">
+    <p class="eyebrow">WELCOME TO THE TEAM</p>
+    <h1>Make yourself at home.</h1>
+    <p>Choose your password to start using your staff account.</p>
+    @if (loading()) {
+      <p role="status">Checking your invitation…</p>
+    }
+    @if (error()) {
+      <p role="alert" class="error">{{ error() }}</p>
+    }
+    @if (valid()) {
+      <p class="account-email">{{ email() }}</p>
+      <form (ngSubmit)="save()">
+        <label
+          >New password<input
+            type="password"
+            name="password"
+            [(ngModel)]="password"
+            minlength="8"
+            required
+            autocomplete="new-password"
+            [disabled]="busy()" /></label
+        ><label
+          >Confirm password<input
+            type="password"
+            name="confirmation"
+            [(ngModel)]="confirmation"
+            minlength="8"
+            required
+            autocomplete="new-password"
+            [disabled]="busy()" /></label
+        ><button class="primary" type="submit" [disabled]="busy()">
+          {{ busy() ? 'Setting up…' : 'Set password & get started' }}
+        </button>
+      </form>
+    }
+    <a routerLink="/login">Back to staff sign-in</a>
+  </section>
+</main>

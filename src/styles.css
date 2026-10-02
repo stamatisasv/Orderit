@@ -109,3 +109,8 @@
 @layer theme {
   .brand-star { display:inline-block; width:1em; height:1em; vertical-align:middle; flex-shrink:0; color:var(--accent); }
 }
+
+@layer theme {
+  @media(max-width:900px) { body:has(app-navbar) { padding-bottom:calc(76px + env(safe-area-inset-bottom)); } }
+  @media(hover:none) { button:hover:not(:disabled),.primary-button:hover,.secondary-button:hover,.actions a:hover { transform:none; box-shadow:none; } }
+}

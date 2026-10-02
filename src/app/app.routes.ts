@@ -4,6 +4,7 @@ import { Home } from './pages/home/home';
 import { Menu } from './pages/menu/menu';
 import { Order } from './pages/order/order';
 import { Basket } from './pages/basket/basket';
+import { StaffActivate } from './pages/staff-activate/staff-activate';
 import { Login } from './pages/login/login';
 
 import { AdminLayout } from './admin/admin-layout/admin-layout';
@@ -17,6 +18,7 @@ import { MenuBuilder } from './admin/menu-builder/menu-builder';
 import { authGuard, adminGuard } from './guards/auth.guard';
 
 export const routes: Routes = [
+  { path: 'staff/activate', component: StaffActivate },
   {
     path: '',
     component: Home

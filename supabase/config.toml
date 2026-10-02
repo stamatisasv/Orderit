@@ -1,0 +1,10 @@
+project_id = "orderit"
+
+[functions.invite-waiter]
+# The handler verifies the bearer token with Supabase Auth, then checks staff.role.
+# This also supports projects using the newer publishable API keys.
+verify_jwt = false
+
+[functions.create-waiter]
+# The handler verifies Auth and admin membership before creating accounts.
+verify_jwt = false

@@ -28,9 +28,9 @@ describe('StaffManagementService', () => {
   it('passes the version when changing a status to prevent overwriting newer edits', async () => {
     const { service, rpc } = setup();
     const order = { id: 'order-id', updatedAt: 'version' } as StaffOrder;
-    await service.setStatus(order, 'ready');
+    await service.setStatus(order, 'served');
     expect(rpc).toHaveBeenCalledWith('set_order_status', {
-      p_id: 'order-id', p_status: 'ready', p_expected_updated_at: 'version',
+      p_id: 'order-id', p_status: 'served', p_expected_updated_at: 'version',
     });
   });
   it('propagates database permission and conflict errors', async () => {

@@ -1,49 +1,77 @@
 <header class="dashboard-header">
   <div>
     <p class="section-label">ADMIN DASHBOARD</p>
-    <h1>Welcome back, {{ username() }}</h1>
+    <h1>Welcome back{{ username() ? ', ' + username() : '' }}</h1>
+    <p class="dashboard-description">A live look at your restaurant.</p>
   </div>
+  <button (click)="refresh()" [disabled]="refreshing()">
+    {{ refreshing() ? 'Updating…' : 'Refresh' }}
+  </button>
 </header>
-
-<section class="stats-grid">
-  <div class="stat-card">
-    <span>Products</span>
-    <strong>0</strong>
-    <p>Menu items</p>
-  </div>
-
-  <div class="stat-card">
-    <span>Active Orders</span>
-    <strong>0</strong>
-    <p>Waiting or preparing</p>
-  </div>
-
-  <div class="stat-card">
-    <span>Tables</span>
-    <strong>0</strong>
-    <p>Registered tables</p>
-  </div>
+@if (error()) {
+  <p role="alert" class="error dashboard-error">
+    {{ error() }}
+    {{
+      summary()
+        ? 'Showing the last successful update.'
+        : 'Counts are unavailable until the connection recovers.'
+    }}
+  </p>
+}
+<section class="stats-grid" aria-label="Restaurant overview" [attr.aria-busy]="refreshing()">
+  <a class="stat-card" routerLink="/admin/menu"
+    ><span>Products</span><strong>{{ summary()?.products ?? '—' }}</strong>
+    <p>Across all menus</p></a
+  >
+  <a class="stat-card" routerLink="/admin/orders"
+    ><span>Active orders</span><strong>{{ summary()?.activeOrders ?? '—' }}</strong>
+    <p>Pending or accepted</p></a
+  >
+  <a class="stat-card" routerLink="/admin/tables"
+    ><span>Tables</span><strong>{{ summary()?.tables ?? '—' }}</strong>
+    <p>All registered tables</p></a
+  >
 </section>
-
+<p class="update-note">
+  @if (updatedAt()) {
+    Updated {{ updatedAt() | date: 'shortTime' }} · Refreshes every 5 seconds
+  } @else {
+    {{ refreshing() ? 'Connecting to your restaurant…' : 'Refresh to load your restaurant.' }}
+  }
+</p>
 <section class="dashboard-grid">
   <div class="dashboard-card">
-    <div class="card-header">
-      <h2>Quick Actions</h2>
-    </div>
-
+    <div class="card-header"><h2>Quick actions</h2></div>
     <div class="quick-actions">
-      <button type="button">Add Product</button>
-      <button type="button">Add Table</button>
+      <a routerLink="/admin/menu">Manage menu <span>↗</span></a
+      ><a routerLink="/admin/tables">Manage tables <span>↗</span></a
+      ><a routerLink="/admin/orders">Manage orders <span>↗</span></a
+      ><a routerLink="/admin/waiters">Manage waiters <span>↗</span></a>
     </div>
   </div>
-
   <div class="dashboard-card">
     <div class="card-header">
-      <h2>Recent Orders</h2>
+      <h2>Recent orders</h2>
+      <a routerLink="/admin/orders">View all →</a>
     </div>
-
-    <div class="empty-state">
-      <p>No orders yet.</p>
-    </div>
+    @if (!summary()) {
+      <div class="empty-state">
+        <p>{{ refreshing() ? 'Loading orders…' : 'Orders are unavailable.' }}</p>
+      </div>
+    }
+    @for (order of summary()?.recentOrders ?? []; track order.id) {
+      <a class="recent-order" routerLink="/admin/orders" [queryParams]="{ table: order.table_id }"
+        ><div>
+          <strong>{{ order.restaurant_tables?.name ?? 'Table ' + order.table_id }}</strong
+          ><small>#{{ order.id.slice(0, 8) }} · {{ order.createdAt | date: 'short' }}</small>
+        </div>
+        <span class="badge">{{ order.status }}</span
+        ><strong>{{ order.total | currency: 'EUR' }}</strong></a
+      >
+    } @empty {
+      @if (summary()) {
+        <div class="empty-state"><p>No orders yet. New orders will appear here.</p></div>
+      }
+    }
   </div>
 </section>

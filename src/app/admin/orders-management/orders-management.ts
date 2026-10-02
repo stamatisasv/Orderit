@@ -103,7 +103,7 @@ export class OrdersManagement implements OnInit, OnDestroy {
   allowedStatuses(order: StaffOrder) {
     if (order.status === 'pending') return ['pending', 'accepted', 'cancelled'];
     if (order.status === 'served' || order.status === 'cancelled') return [order.status, 'pending'];
-    return this.statuses;
+    return ['accepted', 'served', 'cancelled'];
   }
   async status(order: StaffOrder, value: string) {
     if (value === order.status) return;

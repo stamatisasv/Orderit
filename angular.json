@@ -25,7 +25,8 @@
               }
             ],
             "styles": [
-              "src/styles.css"
+              "src/styles.css",
+              "src/app/shared/guest-checkout/guest-checkout-common.css"
             ]
           },
           "configurations": {

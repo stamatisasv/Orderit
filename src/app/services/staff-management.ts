@@ -5,7 +5,7 @@ import { AdminProduct } from './admin-product';
 export interface RestaurantTable {
   id: number; name: string; qr_token: string; is_active: boolean;
 }
-export const ORDER_STATUSES = ['pending', 'accepted', 'preparing', 'ready', 'served', 'cancelled'] as const;
+export const ORDER_STATUSES = ['pending', 'accepted', 'served', 'cancelled'] as const;
 export type OrderStatus = typeof ORDER_STATUSES[number];
 export interface OrderItem {
   id: number; product_id: number | null; product_name: string;

@@ -15,6 +15,8 @@ export class GuestOrderingService {
   token = signal(sessionStorage.getItem('orderit-table') ?? '');
   state = signal<TableState | null>(null);
   error = signal('');
+  connectionError = signal('');
+  connected = signal(false);
   message = signal('');
   busy = signal(false);
   total = computed(() => this.state()?.basket.reduce((sum, i) => sum + Number(i.price) * i.quantity, 0) ?? 0);
@@ -29,7 +31,7 @@ export class GuestOrderingService {
     return data;
   }
   async select(token: string) {
-    this.epoch++; this.token.set(token); this.state.set(null); this.error.set(''); this.message.set('');
+    this.epoch++; this.token.set(token); this.state.set(null); this.connected.set(false); this.connectionError.set(''); this.error.set(''); this.message.set('');
     sessionStorage.setItem('orderit-table', token);
     if (token) await this.refresh();
   }
@@ -37,15 +39,24 @@ export class GuestOrderingService {
     const token = this.token();
     if (!token) return;
     const epoch = this.epoch, sequence = ++this.readSequence;
-    const { data, error } = await this.db.rpc('guest_table_state', { p_token: token });
+    let data: unknown, error: unknown;
+    try {
+      ({ data, error } = await this.db.rpc('guest_table_state', { p_token: token }));
+    } catch (failure) { error = failure; }
     if (epoch !== this.epoch || sequence < this.appliedSequence) return;
     this.appliedSequence = sequence;
-    if (error) { this.error.set(this.describe(error)); return; }
+    if (error) {
+      this.connected.set(false);
+      this.connectionError.set(this.describe(error));
+      return;
+    }
     this.state.set(data as TableState);
+    this.connected.set(true);
+    this.connectionError.set('');
   }
   async change(productId: number, delta: number) {
     const state = this.state();
-    if (!state || this.busy()) return;
+    if (!state || this.busy() || !this.connected()) return;
     await this.perform(async () => {
       const { error } = await this.db.rpc('change_table_basket', {
         p_token: this.token(), p_visit: state.visit_id, p_product: productId,
@@ -60,7 +71,7 @@ export class GuestOrderingService {
   }
   async checkout(notes: string) {
     const state = this.state();
-    if (!state || this.busy()) return;
+    if (!state || this.busy() || !this.connected()) return;
     const key = `orderit-checkout-${state.id}-${state.visit_id}`;
     // Keep the request after a network failure so retry cannot create a duplicate.
     const requestId = sessionStorage.getItem(key) ?? crypto.randomUUID();
@@ -75,12 +86,12 @@ export class GuestOrderingService {
         throw error;
       }
       sessionStorage.removeItem(key);
-      this.message.set(`Order ${String(data).slice(0, 8)} sent. Waiting for staff to accept it.`);
+      this.message.set(`Order ${String(data).slice(0, 8)} sent. Thank you!`);
     });
   }
   async help(kind: 'waiter' | 'bill') {
     const state = this.state();
-    if (!state || this.busy()) return;
+    if (!state || this.busy() || !this.connected()) return;
     await this.perform(async () => {
       const { error } = await this.db.rpc('request_table_help', { p_token: this.token(), p_visit: state.visit_id, p_kind: kind });
       if (error) throw error;

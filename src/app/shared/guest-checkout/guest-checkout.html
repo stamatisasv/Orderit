@@ -1,36 +1,360 @@
-<main id="order-top">
-  <header><p class="eyebrow">ORDERIT · AT YOUR TABLE</p><h1>{{ basketOnly ? 'Your table’s basket' : 'Order for your table' }}</h1><p>Choose your favourites. Your whole table shares one basket.</p></header>
-  @if (guest.error()) { <p role="alert" class="error">{{ guest.error() }}</p> }
-  @if (guest.message()) { <p role="status" class="success">{{ guest.message() }}</p> }
-  @if (loading()) { <p role="status">Loading…</p> }
-  <label class="table-selector">Your table<select [ngModel]="guest.token()" (ngModelChange)="select($event)" [disabled]="guest.busy()"><option value="">Choose your table</option>@for (table of tables(); track table.id) { <option [value]="table.qr_token">{{ table.name }}</option> }</select></label>
-  @if (guest.state(); as state) {
-    <section class="table-bar"><div><h2>{{ state.name }}</h2><p>Shared with everyone selecting this table. Your basket stays in sync.</p></div><div class="actions"><button (click)="guest.help('waiter')" [disabled]="guest.busy() || requested('waiter')">{{ requested('waiter') ? 'Waiter requested' : 'Call waiter' }}</button><button (click)="guest.help('bill')" [disabled]="guest.busy() || requested('bill')">{{ requested('bill') ? 'Bill requested' : 'Request bill' }}</button></div>
-    @for (request of state.requests; track request.kind) { <p>{{ request.kind === 'waiter' ? 'Waiter' : 'Bill' }} request: {{ request.status === 'acknowledged' ? 'Staff are on their way' : 'Waiting for staff' }}</p> }</section>
-    <nav class="actions" aria-label="Ordering steps"><a routerLink="/order" [queryParams]="{table: guest.token()}">Browse dishes</a><a routerLink="/basket" [queryParams]="{table: guest.token()}">Basket ({{ guest.count() }})</a><a [routerLink]="[]" fragment="table-orders" queryParamsHandling="preserve">Table orders ({{ state.orders.length }})</a></nav>
-    <div class="layout" [class.basket-only]="basketOnly">
-      @if (!basketOnly) {
-        <section><h2>Menu</h2><label>Find a dish or drink<input type="search" [(ngModel)]="search" placeholder="Search dishes or drinks" enterkeyhint="search"></label>
-        <div class="category-tabs" aria-label="Menu categories">@for (category of categoryNames(); track category) { <button [class.selected]="selectedCategory() === category" [attr.aria-pressed]="selectedCategory() === category" (click)="selectedCategory.set(category)">{{ category }}</button> }</div>
-        <div class="products">@for (product of filteredProducts(); track product.id) {
-          <article>@if (product.imageUrl) { <img [src]="product.imageUrl" [alt]="product.name" loading="lazy"> }<h3>{{ product.name }}</h3><p>{{ product.description }}</p><div class="actions"><strong>{{ product.price | currency:'EUR' }}</strong><button (click)="guest.change(product.id, 1)" [disabled]="guest.busy() || !product.isAvailable">{{ product.isAvailable ? '+ Add' : 'Unavailable' }}</button></div></article>
-        } @empty { <p>No matching dishes.</p><button (click)="search = ''; selectedCategory.set('All')">Show all dishes</button> }</div></section>
-      }
-      <section class="basket" id="shared-basket"><h2>Shared basket</h2><p>Review all items together. Submitting sends the whole table basket.</p>
-        @for (item of state.basket; track item.product_id) {
-          <div class="basket-line"><div><strong>{{ item.name }}</strong><p>{{ item.price | currency:'EUR' }} each</p>@if (!item.available) { <p class="error">Unavailable — remove before ordering.</p> }</div><div class="actions"><button (click)="guest.change(item.product_id, -1)" [disabled]="guest.busy()" [attr.aria-label]="'Remove one ' + item.name">−</button><span>{{ item.quantity }}</span><button (click)="guest.change(item.product_id, 1)" [disabled]="guest.busy() || !item.available || item.quantity >= 99" [attr.aria-label]="'Add one ' + item.name">+</button></div></div>
-        } @empty { <p>Your table basket is empty. Add something from the menu.</p> }
-        <label>Kitchen notes (optional)<textarea [(ngModel)]="notes" maxlength="1000" rows="3" placeholder="Any requests for the kitchen?" [disabled]="guest.busy()"></textarea></label>
-        <p class="total">Estimated total {{ guest.total() | currency:'EUR' }}</p>
-        <button class="primary" (click)="guest.checkout(notes)" [disabled]="!canCheckout()">{{ guest.busy() ? 'Please wait…' : (guest.pendingCheckout() ? 'Retry / confirm submission' : 'Send table order') }}</button>
-        <p>Staff must accept your order before preparation. Final prices are checked when submitted.</p>
-      </section>
+<main id="order-top" [class.basket-page]="basketOnly" [class.orders-page]="view() === 'orders'">
+  <header class="page-heading">
+    <div>
+      <p class="eyebrow">GOOD FOOD. GOOD COMPANY.</p>
+      <h1>
+        {{
+          basketOnly
+            ? 'A table of favourites.'
+            : view() === 'orders'
+              ? 'Good things on the way.'
+              : 'What sounds good?'
+        }}
+      </h1>
+      <p class="intro">
+        {{
+          basketOnly
+            ? 'One basket. Everyone’s favourites.'
+            : view() === 'orders'
+              ? 'Follow everything your table has ordered.'
+              : 'A little for you. A little to share.'
+        }}
+      </p>
     </div>
-    @if (!basketOnly && guest.count()) { <a class="mobile-basket" routerLink="/basket" [queryParams]="{table: guest.token()}"><span>View table basket · {{ guest.count() }} items</span><strong>{{ guest.total() | currency:'EUR' }} ↗</strong></a> }
-    <section id="table-orders"><h2>Table orders</h2><p>Orders from the current visit, including those placed by other guests.</p>
-      @for (order of state.orders; track order.id) {
-        <article class="existing-order"><div class="actions"><strong>#{{ order.id.slice(0, 8) }}</strong><span class="badge">{{ statusLabel(order.status) }}</span><span>{{ order.createdAt | date:'shortTime' }}</span></div><ul>@for (item of order.items; track $index) { <li>{{ item.quantity }} × {{ item.name }} — {{ item.total | currency:'EUR' }}</li> }</ul>@if (order.notes) { <p>{{ order.notes }}</p> }<strong>Total {{ order.total | currency:'EUR' }}</strong></article>
-      } @empty { <p>No orders have been placed during this visit.</p> }
-    </section>
-  } @else if (!loading()) { <p>Choose your table above to see its basket and orders.</p> }
+    <span class="heading-mark" aria-hidden="true">✳</span>
+  </header>
+
+  <section class="table-context" aria-label="Your table">
+    <div class="table-choice">
+      <span class="table-icon" aria-hidden="true">⌑</span
+      ><label for="table-select"
+        >{{ guest.state() ? 'YOU’RE AT' : 'LET’S GET YOU SEATED'
+        }}<select
+          #tableSelect
+          id="table-select"
+          [ngModel]="guest.token()"
+          (ngModelChange)="select($event)"
+          [disabled]="guest.busy()"
+        >
+          <option value="">Choose your table</option>
+          @for (table of tables(); track table.id) {
+            <option [value]="table.qr_token">{{ table.name }}</option>
+          }
+        </select></label
+      ><span
+        class="sync-dot"
+        [class.live]="guest.connected()"
+        [attr.aria-label]="guest.connected() ? 'Table connected' : 'Table not connected'"
+      ></span>
+    </div>
+    @if (needsTable()) {
+      <p role="status" class="table-hint">Choose your table above, then add your favourites.</p>
+    }
+    @if (guest.state()) {
+      <details class="table-help">
+        <summary>Need a hand? <span aria-hidden="true">＋</span></summary>
+        <div class="help-actions">
+          <button
+            (click)="guest.help('waiter')"
+            [disabled]="guest.busy() || !guest.connected() || requested('waiter')"
+          >
+            {{ requested('waiter') ? 'Waiter requested ✓' : 'Call a waiter' }}</button
+          ><button
+            (click)="guest.help('bill')"
+            [disabled]="guest.busy() || !guest.connected() || requested('bill')"
+          >
+            {{ requested('bill') ? 'Bill requested ✓' : 'Request the bill' }}
+          </button>
+        </div>
+        @for (request of guest.state()!.requests; track request.kind) {
+          <p role="status">
+            {{ request.kind === 'waiter' ? 'Waiter' : 'Bill' }}:
+            {{
+              request.status === 'acknowledged' ? 'Staff are on their way' : 'We’ve let staff know'
+            }}.
+          </p>
+        }
+      </details>
+    }
+  </section>
+
+  @if (guest.connectionError() || menuError() || tablesError()) {
+    <div class="connection-warning" role="status">
+      <div>
+        <strong>Taking a moment to reconnect</strong>
+        <p>Your last update is still here. Ordering resumes when your table reconnects.</p>
+        <p>{{ guest.connectionError() || menuError() || tablesError() }}</p>
+      </div>
+      <button (click)="refresh(true)" [disabled]="guest.busy()">Retry</button>
+    </div>
+  }
+  @if (guest.error()) {
+    <p role="alert" class="error">{{ guest.error() }}</p>
+  }
+  @if (guest.message()) {
+    <p role="status" class="success">{{ guest.message() }}</p>
+  }
+  @if (added()) {
+    <div class="add-toast" role="status"><span aria-hidden="true">✓</span>{{ added() }}</div>
+  }
+
+  @if (loading()) {
+    <div class="skeleton-list" role="status" aria-label="Loading your menu">
+      <span class="sr-only">Getting everything ready…</span>
+      <div></div>
+      <div></div>
+      <div></div>
+    </div>
+  } @else {
+    @if (!basketOnly && view() === 'menu') {
+      <div class="layout">
+        <section class="menu-section" aria-label="Browse the menu">
+          <div class="browse-tools">
+            <label class="search-field"
+              ><svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.7"
+                aria-hidden="true"
+              >
+                <circle cx="10.5" cy="10.5" r="6.5" />
+                <path d="m16 16 4 4" /></svg
+              ><input
+                type="search"
+                [(ngModel)]="search"
+                placeholder="Find your next favourite"
+                aria-label="Search dishes and drinks"
+                enterkeyhint="search"
+              />
+              @if (search) {
+                <button class="clear-search" (click)="search = ''" aria-label="Clear search">
+                  ×
+                </button>
+              }
+            </label>
+            <div class="category-tabs" aria-label="Menu categories">
+              @for (category of categoryNames(); track category) {
+                <button
+                  [class.selected]="selectedCategory() === category"
+                  [attr.aria-pressed]="selectedCategory() === category"
+                  (click)="selectCategory(category)"
+                >
+                  {{ category }}
+                </button>
+              }
+            </div>
+          </div>
+          <div class="section-heading">
+            <h2>
+              {{
+                search
+                  ? 'Your search'
+                  : selectedCategory() === 'All'
+                    ? 'Find your favourite'
+                    : selectedCategory()
+              }}
+            </h2>
+            <span>{{ filteredProducts().length }} choices</span>
+          </div>
+          <div class="products">
+            @for (product of filteredProducts(); track product.id) {
+              <article [class.sold-out]="!product.isAvailable">
+                <div class="dish-copy">
+                  <h3>{{ product.name }}</h3>
+                  @if (product.description) {
+                    <p>{{ product.description }}</p>
+                  }
+                  <strong class="dish-price">{{ product.price | currency: 'EUR' }}</strong>
+                </div>
+                <div class="dish-side">
+                  @if (product.imageUrl) {
+                    <img
+                      [src]="product.imageUrl"
+                      [alt]="product.name"
+                      loading="lazy"
+                      width="112"
+                      height="112"
+                    />
+                  } @else {
+                    <div class="dish-art" aria-hidden="true">
+                      <span>✳</span><small>made to enjoy</small>
+                    </div>
+                  }
+                  @if (!product.isAvailable) {
+                    <span class="unavailable-label">Sold out</span>
+                  } @else if (quantity(product.id)) {
+                    <div class="quantity-control">
+                      <button
+                        (click)="changeProduct(product, -1)"
+                        [disabled]="guest.busy() || !guest.connected()"
+                        [attr.aria-label]="'Remove one ' + product.name"
+                      >
+                        −</button
+                      ><span aria-live="polite">{{ quantity(product.id) }}</span
+                      ><button
+                        (click)="changeProduct(product, 1)"
+                        [disabled]="
+                          guest.busy() ||
+                          !guest.connected() ||
+                          !menuConnected() ||
+                          quantity(product.id) >= 99
+                        "
+                        [attr.aria-label]="'Add one ' + product.name"
+                      >
+                        +
+                      </button>
+                    </div>
+                  } @else {
+                    <button
+                      class="add-dish"
+                      (click)="changeProduct(product, 1)"
+                      [disabled]="
+                        guest.busy() || !menuConnected() || (!!guest.state() && !guest.connected())
+                      "
+                      [attr.aria-label]="'Add ' + product.name"
+                    >
+                      {{ pendingProduct() === product.id ? 'Adding…' : 'Add' }}
+                      <span aria-hidden="true">＋</span>
+                    </button>
+                  }
+                </div>
+              </article>
+            } @empty {
+              <div class="empty-state">
+                <span aria-hidden="true">✳</span>
+                <h3>{{ search ? 'Nothing on the menu matches.' : 'Something good is coming.' }}</h3>
+                <p>
+                  {{
+                    search
+                      ? 'Try a different word or explore all the favourites.'
+                      : 'Ask your waiter what’s available today.'
+                  }}
+                </p>
+                @if (search || selectedCategory() !== 'All') {
+                  <button (click)="search = ''; selectedCategory.set('All')">
+                    See the whole menu
+                  </button>
+                }
+              </div>
+            }
+          </div>
+          <p class="menu-footnote">
+            Made with care. Enjoyed together.<br />Questions about ingredients? Ask your waiter.
+          </p>
+        </section>
+        <aside class="desktop-basket">
+          <h2>Your table basket</h2>
+          <p>
+            {{
+              guest.count()
+                ? guest.count() + ' items to enjoy together.'
+                : 'Your next favourite is waiting.'
+            }}
+          </p>
+          <strong>{{ guest.total() | currency: 'EUR' }}</strong
+          ><a class="primary-button" routerLink="/basket" [queryParams]="{ table: guest.token() }"
+            >Review basket <span aria-hidden="true">↗</span></a
+          >
+          <p>Everyone at your table shares this basket.</p>
+        </aside>
+      </div>
+      @if (guest.count()) {
+        <a class="mobile-basket" routerLink="/basket" [queryParams]="{ table: guest.token() }"
+          ><span class="basket-number">{{ guest.count() }}</span
+          ><span>Review your basket<small>For the whole table</small></span
+          ><strong
+            >{{ guest.total() | currency: 'EUR' }} <span aria-hidden="true">↗</span></strong
+          ></a
+        >
+      }
+    }
+
+    @if (basketOnly) {
+      <section class="basket" id="shared-basket">
+        <div class="section-heading">
+          <h2>{{ guest.count() ? 'Ready to share?' : 'Your basket awaits.' }}</h2>
+          <span>{{ guest.count() }} items</span>
+        </div>
+        @for (item of guest.state()?.basket ?? []; track item.product_id) {
+          <div class="basket-line">
+            <div>
+              <strong>{{ item.name }}</strong>
+              <p>{{ item.price | currency: 'EUR' }} each</p>
+              @if (!item.available) {
+                <p class="error">Unavailable — remove before ordering.</p>
+              }
+            </div>
+            <div class="basket-line-end">
+              <strong>{{ item.price * item.quantity | currency: 'EUR' }}</strong>
+              <div class="quantity-control">
+                <button
+                  (click)="guest.change(item.product_id, -1)"
+                  [disabled]="guest.busy() || !guest.connected()"
+                  [attr.aria-label]="'Remove one ' + item.name"
+                >
+                  −</button
+                ><span>{{ item.quantity }}</span
+                ><button
+                  (click)="guest.change(item.product_id, 1)"
+                  [disabled]="
+                    guest.busy() || !guest.connected() || !item.available || item.quantity >= 99
+                  "
+                  [attr.aria-label]="'Add one ' + item.name"
+                >
+                  +
+                </button>
+              </div>
+            </div>
+          </div>
+        } @empty {
+          <div class="empty-state">
+            <span aria-hidden="true">✳</span>
+            <h3>A little of what you love.</h3>
+            <p>Explore the menu and add something delicious. Everyone at your table can join in.</p>
+            <a
+              class="primary-button"
+              routerLink="/order"
+              [queryParams]="{ table: guest.token(), view: 'menu' }"
+              >Find your favourites ↗</a
+            >
+          </div>
+        }
+        @if (guest.count() || guest.pendingCheckout()) {
+          <label class="notes-label"
+            >A note for the kitchen <span>Optional</span
+            ><textarea
+              [(ngModel)]="notes"
+              maxlength="1000"
+              rows="2"
+              placeholder="Anything you’d like us to know?"
+              [disabled]="guest.busy()"
+            ></textarea>
+          </label>
+          <div class="checkout-total">
+            <span>Estimated total<small>Final prices checked when sent</small></span
+            ><strong>{{ guest.total() | currency: 'EUR' }}</strong>
+          </div>
+          <div class="checkout-dock">
+            <button class="primary send-order" (click)="sendOrder()" [disabled]="!canCheckout()">
+              {{
+                guest.busy()
+                  ? 'Sending your order…'
+                  : guest.pendingCheckout()
+                    ? 'Confirm your submission'
+                    : 'Send table order'
+              }}<span aria-hidden="true">↗</span>
+            </button>
+            <p>Your waiter accepts your order before preparation.</p>
+          </div>
+          <a
+            class="keep-browsing"
+            routerLink="/order"
+            [queryParams]="{ table: guest.token(), view: 'menu' }"
+            >← A little something else?</a
+          >
+        }
+      </section>
+    }
+  }
 </main>

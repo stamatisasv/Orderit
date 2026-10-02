@@ -51,4 +51,32 @@ describe('GuestOrderingService', () => {
     await old;
     expect(guest.state()?.id).toBe(2);
   });
+  it('marks retained data stale, blocks actions, and recovers after a failed refresh', async () => {
+    const { guest, rpc } = setup();
+    await guest.select('token');
+    rpc.mockResolvedValueOnce({ data: null, error: { message: 'Network unavailable' } });
+    await guest.refresh();
+    expect(guest.state()).toEqual(state);
+    expect(guest.connected()).toBe(false);
+    expect(guest.connectionError()).toBe('Network unavailable');
+    rpc.mockClear();
+    await guest.change(1, 1);
+    await guest.checkout('');
+    await guest.help('waiter');
+    expect(rpc).not.toHaveBeenCalled();
+    await guest.refresh();
+    expect(guest.connected()).toBe(true);
+    expect(guest.connectionError()).toBe('');
+  });
+  it('recovers from a rejected network request without leaving a connection error', async () => {
+    const { guest, rpc } = setup();
+    await guest.select('token');
+    rpc.mockRejectedValueOnce(new Error('Offline'));
+    await guest.refresh();
+    expect(guest.connected()).toBe(false);
+    await guest.refresh();
+    expect(guest.connected()).toBe(true);
+    expect(guest.connectionError()).toBe('');
+  });
+
 });

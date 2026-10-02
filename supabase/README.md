@@ -23,7 +23,7 @@ insert into public.staff (user_id, name, role)
 values ('YOUR-AUTH-USER-UUID'::uuid, 'Owner', 'admin');
 ```
 
-For each waiter, create another Auth user and insert their UUID with role `waiter`. Customers cannot assign themselves staff roles. Staff membership management currently requires SQL Editor or a trusted backend.
+For each waiter, create another Auth user and insert their UUID with role `waiter`. Customers cannot assign themselves staff roles. After the one-time setup in WAITERS_SETUP.md, owners manage waiters directly in the app.
 
 ## 3. Customers do not have accounts
 
@@ -92,7 +92,7 @@ npm start
 
 Open `http://localhost:4200/login` and sign in using the email/password of the admin created in step 2. Open `/admin/menu` to create menus, categories and products, upload cropped photos, and activate a menu. Open `/menu` to view the active menu, or `/menu?table=YOUR-QR-TOKEN` to show the table name.
 
-Menu, category, product, image upload and admin authentication services now use Supabase. The public menu also reads Supabase. Guest checkout and basket are described in section 8; waiter account management remains a placeholder; the guest order RPC examples above describe the database API for checkout. See section 7 for the implemented table/order management screens.
+Menu, category, product, image upload and admin authentication services now use Supabase. The public menu also reads Supabase. Guest checkout and basket are described in section 8; waiter account management is described in section 9; the guest order RPC examples above describe the database API for checkout. See section 7 for the implemented table/order management screens.
 
 Past orders keep item snapshots when products are deleted. Deactivate tables with order history instead of deleting them. Removing/replacing product image references does not currently garbage-collect old stored images.
 
@@ -134,3 +134,24 @@ Staff flow:
 - Synchronization uses polling, not Supabase Realtime. No replication/publication setup is needed. Refresh intervals add database traffic and should be reviewed against your hosting limits before deployment.
 
 Local SQL regression checks: install `@electric-sql/pglite` in a temporary directory, then set `PGLITE_MODULE` to its `dist/index.js` path and run `node scripts/check-shared-ordering.mjs`. The script uses an in-memory database with Auth/Storage stubs and never connects to hosted Supabase. It checks migrations, multiple additions, retry idempotency, stale checkout rejection, prices, role permissions, staff acceptance, assistance and visit resets. It does not simulate multiple PostgreSQL connections.
+
+
+## 9. Dashboard and waiter management
+
+The dashboard reads real product/table counts and active orders (`pending`, `accepted`), shows the five newest orders, and refreshes every five seconds while visible. Failed reads retain the previous summary and show an error. No extra dashboard migration is needed.
+
+Owners create waiter logins directly in **Admin → Waiters**, using name, email and an initial password. The developer must run `waiters-management.sql` and deploy `create-waiter` once. Follow [WAITERS_SETUP.md](WAITERS_SETUP.md) for dashboard-only setup without CLI/Keychain.
+
+Existing accounts can be linked by email without changing passwords. Removing waiter access retains the login and immediately revokes staff data access through RLS. Admin accounts are protected. The older invitation function is optional legacy code and is not used by this form.
+
+Run `simplify-order-statuses.sql` after the ordering migrations to convert preparing/ready to accepted and enforce pending, accepted, served and cancelled. Customer status tracking is hidden; checkout shows a sent confirmation.
+
+Validation:
+
+```bash
+npm test -- --watch=false
+node scripts/check-waiter-creation.mjs
+PGLITE_MODULE=/path/to/pglite/dist/index.js node scripts/check-shared-ordering.mjs
+```
+
+These checks do not create hosted users or validate a hosted deployment.

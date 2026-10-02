@@ -8,15 +8,22 @@ try {
   await db.exec(`
     create role anon; create role authenticated;
     create schema auth; create schema storage;
-    create table auth.users(id uuid primary key);
+    create table auth.users(id uuid primary key, email text, email_confirmed_at timestamptz);
     create function auth.uid() returns uuid language sql as
       $$ select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$;
     create table storage.buckets(id text primary key, name text, public boolean, file_size_limit bigint, allowed_mime_types text[]);
     create table storage.objects(id uuid, bucket_id text);
     grant usage on schema public, auth to anon, authenticated;
   `);
-  for (const file of ['setup.sql','guest-ordering.sql','staff-management.sql','seed.sql','shared-table-ordering.sql']) {
+  for (const file of ['setup.sql','guest-ordering.sql','staff-management.sql','seed.sql','shared-table-ordering.sql','waiters-management.sql','simplify-order-statuses.sql']) {
+    if (file === 'simplify-order-statuses.sql') {
+      await db.exec("insert into public.orders(table_id,request_id,status) select (select min(id) from public.restaurant_tables),gen_random_uuid(),s from unnest(array['preparing','ready']) s");
+    }
     await db.exec(readFileSync(new URL(`../supabase/${file}`, import.meta.url), 'utf8'));
+    if (file === 'simplify-order-statuses.sql') {
+      assert.deepEqual((await db.query('select status from public.orders')).rows.map(o => o.status), ['accepted','accepted']);
+      await db.exec('delete from public.orders');
+    }
   }
   console.log('PASS: all SQL scripts execute');
   const admin = crypto.randomUUID(), waiter = crypto.randomUUID();
@@ -57,14 +64,24 @@ try {
   await db.exec('reset role; set role authenticated');
   await db.query("select set_config('request.jwt.claim.sub',$1,false)", [waiter]);
   const version = async () => (await db.query('select "updatedAt"::text as v from public.orders where id=$1', [id])).rows[0].v;
-  await assert.rejects(db.query("select public.set_order_status($1,'preparing',$2)", [id, await version()]), /Accept or decline/);
+  await assert.rejects(db.query("select public.set_order_status($1,'served',$2)", [id, await version()]), /Accept or decline/);
   await db.query("select public.set_order_status($1,'accepted',$2)", [id, await version()]);
   assert.equal((await state()).orders[0].status, 'accepted');
+  for (const obsolete of ['preparing','ready']) await assert.rejects(db.query('select public.set_order_status($1,$2,$3)', [id, obsolete, await version()]), /Invalid status/);
   await assert.rejects(db.query('select public.start_table_visit($1)', [tables[0].id]), /Serve or cancel/);
   const help = (await db.query('select id from public.table_requests')).rows[0].id;
   await db.query("select public.handle_table_request($1,'acknowledged')", [help]);
   assert.equal((await state()).requests[0].status, 'acknowledged');
   await db.query("select public.handle_table_request($1,'done')", [help]);
+  assert.equal((await state()).requests.length, 0);
+  await db.query("select public.request_table_help($1,$2,'bill')", [token, initial.visit_id]);
+  await db.query("select public.request_table_help($1,$2,'bill')", [token, initial.visit_id]);
+  assert.equal((await state()).requests.length, 1);
+  assert.equal((await state()).requests[0].kind, 'bill');
+  const bill = (await db.query("select id from public.table_requests where kind='bill' and status='pending'")).rows[0].id;
+  await db.query("select public.handle_table_request($1,'acknowledged')", [bill]);
+  assert.equal((await state()).requests[0].status, 'acknowledged');
+  await db.query("select public.handle_table_request($1,'done')", [bill]);
   assert.equal((await state()).requests.length, 0);
   await assert.rejects(db.query('select public.delete_staff_order($1,$2)', [id, await version()]), /Admin access/);
   await db.query("select public.set_order_status($1,'served',$2)", [id, await version()]);
@@ -75,4 +92,40 @@ try {
   await assert.rejects(change(), /new table visit/);
   assert.equal((await db.query('select count(*)::int as n from public.orders')).rows[0].n, 1);
   console.log('PASS: waiter acceptance, assistance handling, role checks, visit reset and order history');
+
+  // Waiter membership functions must never allow a waiter/guest to grant access.
+  await db.exec('reset role');
+  const candidate = crypto.randomUUID();
+  await db.query('insert into auth.users(id,email,email_confirmed_at) values ($1,$2,now())', [candidate, 'new.waiter@example.com']);
+  await db.query('update auth.users set email=$1 where id=$2', ['owner@example.com', admin]);
+  await db.exec('set role anon');
+  await assert.rejects(db.query('select * from public.list_waiters()'), /permission denied/);
+  await assert.rejects(db.query("select public.add_waiter_by_email('new.waiter@example.com','Guest')"), /permission denied/);
+  await db.exec('reset role; set role authenticated');
+  await db.query("select set_config('request.jwt.claim.sub',$1,false)", [waiter]);
+  await assert.rejects(db.query('select * from public.list_waiters()'), /Admin access/);
+  await assert.rejects(db.query("select public.add_waiter_by_email('new.waiter@example.com','Waiter')"), /Admin access/);
+  await assert.rejects(db.query("insert into public.staff values ($1,'Intruder','admin')", [candidate]), /permission denied/);
+  await db.query("select set_config('request.jwt.claim.sub',$1,false)", [admin]);
+  await assert.rejects(db.query("select public.add_waiter_by_email('missing@example.com','Missing')"), /No sign-in account/);
+  await assert.rejects(db.query("select public.add_waiter_by_email('owner@example.com','Owner')"), /already has staff access/);
+  await assert.rejects(db.query('select public.remove_waiter($1,$2)', [admin, 'Owner']), /Waiter changed/);
+  assert.equal((await db.query("select public.add_waiter_by_email(' NEW.WAITER@example.com ',' Alex ') as id")).rows[0].id, candidate);
+  const listed = (await db.query('select * from public.list_waiters()')).rows;
+  assert.equal(listed.find(w => w.user_id === candidate).name, 'Alex');
+  assert.equal(listed.find(w => w.user_id === candidate).email, 'new.waiter@example.com');
+  await db.query('select public.rename_waiter($1,$2,$3)', [candidate, 'Alexandra', 'Alex']);
+  await assert.rejects(db.query('select public.rename_waiter($1,$2,$3)', [candidate, 'Stale', 'Alex']), /Waiter changed/);
+  await assert.rejects(db.query('select public.remove_waiter($1,$2)', [candidate, 'Alex']), /Waiter changed/);
+  await db.query("select set_config('request.jwt.claim.sub',$1,false)", [candidate]);
+  assert.equal((await db.query('select public.is_staff() as staff')).rows[0].staff, true);
+  await db.query("select set_config('request.jwt.claim.sub',$1,false)", [admin]);
+  await db.query('select public.remove_waiter($1,$2)', [candidate, 'Alexandra']);
+  await db.query("select set_config('request.jwt.claim.sub',$1,false)", [candidate]);
+  assert.equal((await db.query('select public.is_staff() as staff')).rows[0].staff, false);
+  assert.equal((await db.query('select * from public.orders')).rows.length, 0);
+  await assert.rejects(db.query('select public.start_table_visit($1)', [tables[0].id]), /Staff access/);
+  await db.query("select set_config('request.jwt.claim.sub',$1,false)", [admin]);
+  await db.query("select public.add_waiter_by_email('new.waiter@example.com','Alexandra')");
+  console.log('PASS: admin-only waiter list/add/rename/removal, stale-edit checks, protected admins and immediate access revocation');
 } finally { await db.close(); }
